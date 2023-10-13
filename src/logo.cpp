@@ -14,6 +14,7 @@ const vector<string> keywords{"left", "right", "forward", "backward", "up",
 enum class LexemeKind {
   Keyword,
   Number,
+  Name,
   Semicolon,
   BraceOpen,
   BraceClose,
@@ -22,25 +23,26 @@ enum class LexemeKind {
   Comma,
 };
 
-union LexemeData {
-  float number;
-  string keyword;
-};
+string lexemeKindToString(LexemeKind kind) {
+  switch (kind) {
+    case LexemeKind::Keyword:
+      return "keyword";
+    case LexemeKind::Number:
+      return "number";
+    case LexemeKind::Name:
+      return "name";
+    default:
+      return "unknown";
+  }
+}
 
 struct Lexeme {
   LexemeKind kind;
-  LexemeData data;
+  string v{};
 
-  Lexeme(LexemeKind kind) : kind(kind), data(0.0f) {}
-  Lexeme(const Lexeme &) = default;
-  ~Lexeme() {}
+  Lexeme(LexemeKind kind) : kind(kind) {}
+  Lexeme(LexemeKind kind, string v) : kind(kind), v(v) {}
 };
-
-Lexeme makeKeywordLexeme(string keyword) {
-  Lexeme out{LexemeKind::Keyword};
-  out.data.keyword = keyword;
-  return out;
-}
 
 struct Lexer {
   string code;
@@ -54,13 +56,18 @@ struct Lexer {
   vector<Lexeme> parse() {
     vector<Lexeme> lexemes{};
 
-    while (!isEnd()) {
+    while (true) {
       consumeSpaces();
+      if (isEnd()) break;
+
       char next = peek();
       if (isalpha(next)) {
         lexemes.push_back(readWord());
       } else if (isdigit(next)) {
-        // lexemes.push_back(readNumber());
+        lexemes.push_back(readNumber());
+      } else {
+        cerr << "Unknown character in lexing\n";
+        exit(EXIT_FAILURE);
       }
     }
 
@@ -71,10 +78,16 @@ struct Lexer {
     string word = readWhile([](char c) -> bool { return isalpha(c); });
     auto it = find(keywords.begin(), keywords.end(), word);
     if (it == keywords.end()) {
-      return makeKeywordLexeme(*it);
+      return Lexeme(LexemeKind::Name, word);
+    } else {
+      return Lexeme(LexemeKind::Keyword, word);
     }
+  }
 
-    exit(EXIT_FAILURE);
+  Lexeme readNumber() {
+    string word =
+        readWhile([](char c) -> bool { return isdigit(c) || c == '.'; });
+    return Lexeme(LexemeKind::Number, word);
   }
 
   string readWhile(bool (*condFn)(char)) {
@@ -96,11 +109,70 @@ struct Lexer {
   }
 };
 
+namespace Ast {
+
+/**
+
+prog      = *statements
+statement = fncall
+fncall    = name popen args pclose
+args      = *expr comma
+
+**/
+
+struct Node {
+  virtual void execute() {}
+};
+
+struct Program : Node {
+  vector<Node> statements;
+
+  Program(vector<Node> statements) : statements(statements) {}
+
+  void execute() {}
+};
+
+struct Expr : Node {
+  void execute() {}
+};
+
+struct FnCallNode : Node {
+  string fnName;
+  vector<Expr> args;
+
+  void execute() {}
+};
+}  // namespace Ast
+
+struct Parser {
+  vector<Lexeme> lexemes;
+  size_t ptr = 0;
+
+  Parser(vector<Lexeme> lexemes) : lexemes(lexemes) {}
+
+  Ast::Program parse() {
+    vector<Ast::Node> statements;
+
+    while (!isEnd()) {
+      statements.push_back(parse_fncall());
+    }
+
+    return Ast::Program(statements);
+  }
+
+  Ast::FnCallNode parse_fncall() {}
+
+  bool isEnd() const { return ptr >= lexemes.size(); }
+  Lexeme peek() const { return lexemes.at(ptr); }
+  Lexeme next() { return lexemes.at(ptr++); }
+};
+
 int main() {
   cout << "Test parser\n";
-  Lexer lexer{"forward 10"};
-
-  cout << lexer.readWhile([](char c) -> bool { return isalpha(c); });
-
+  Lexer lexer{"forward(10)"};
   auto lexemes = lexer.parse();
+  for (auto lexeme : lexemes) {
+    cout << "Lexeme(" << lexemeKindToString(lexeme.kind) << ") = " << lexeme.v
+         << endl;
+  }
 }
