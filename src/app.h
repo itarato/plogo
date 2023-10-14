@@ -1,15 +1,20 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "config.h"
+#include "logo.h"
 #include "raylib.h"
 #include "text_input.h"
+#include "vm.h"
 
 using namespace std;
 
 struct App {
   TextInput textInput{};
+  VM vm{};
+  optional<string> command{nullopt};
 
   App() {}
   App(const App &) = delete;
@@ -41,10 +46,17 @@ struct App {
     }
   }
 
-  void update() { textInput.update(); }
+  void update() { command = textInput.update(); }
 
-  void draw() const {
+  void draw() {
     DrawFPS(GetScreenWidth() - 100, 4);
     textInput.draw();
+
+    if (command.has_value()) {
+      Lexer lexer{command.value()};
+      Parser parser{lexer.parse()};
+      Ast::Program prg = parser.parse();
+      prg.execute(&vm);
+    }
   }
 };

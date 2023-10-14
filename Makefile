@@ -10,8 +10,8 @@ ifeq ($(UNAME_S),Darwin)
 	CXXFLAGS += -I./lib
 endif
 
-BIN=main
-SRC=$(wildcard src/*.cpp)
+BIN?=main
+SRC=$(wildcard src/$(BIN).cpp)
 OBJ=$(addsuffix .o,$(basename $(SRC)))
 
 all: CXXFLAGS += -O3
@@ -23,7 +23,7 @@ debug: executable
 executable: $(OBJ)
 	$(CXX) -o $(BIN) $^ $(CXXFLAGS) $(LIBS)
 
-%.o:%.cpp
+$(BIN).o:$(BIN).cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 clean:
@@ -31,7 +31,7 @@ clean:
 	rm -f ./$(BIN)
 
 run: clean all
-	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib ./main
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib ./$(BIN)
 
 rebuild: clean
 rebuild: all

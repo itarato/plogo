@@ -2,3 +2,4 @@ main
 src/*.o
 .vscode
 src/logo
+test_logo

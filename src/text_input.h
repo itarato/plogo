@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -22,10 +23,8 @@ struct TextInput {
   TextInput(TextInput &&other) = delete;
   ~TextInput() {}
 
-  void update() {
-    TraceLog(LOG_INFO, "Here");
-
-    if (!isActive) return;
+  optional<string> update() {
+    if (!isActive) return nullopt;
 
     // Text input.
     int keyCode = GetKeyPressed();
@@ -35,6 +34,12 @@ struct TextInput {
 
     if (keyCode == KEY_BACKSPACE && !command.empty()) {
       command.pop_back();
+    }
+
+    if (keyCode == KEY_ENTER) {
+      return command;
+    } else {
+      return nullopt;
     }
   }
 
