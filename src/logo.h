@@ -27,6 +27,7 @@ enum class LexemeKind {
   ParenOpen,
   ParenClose,
   Comma,
+  Op,
 };
 
 string lexemeKindToString(LexemeKind kind) {
@@ -97,6 +98,8 @@ struct Lexer {
       } else if (c == ',') {
         lexemes.push_back(Lexeme(LexemeKind::Comma));
         next();
+      } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+        lexemes.push_back(Lexeme(LexemeKind::Op, to_string(c)));
       } else {
         cerr << "Unknown character in lexing\n";
         exit(EXIT_FAILURE);
@@ -186,6 +189,36 @@ struct FloatExpr : Expr {
   float value() { return v; }
 
   ~FloatExpr() {}
+};
+
+struct BinOpExpr : Expr {
+  string op;
+  unique_ptr<Expr> lhs;
+  unique_ptr<Expr> rhs;
+  float v;
+
+  BinOpExpr(string op, unique_ptr<Expr> lhs, unique_ptr<Expr> rhs)
+      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+
+  ~BinOpExpr() {}
+
+  void execute(VM *vm) {
+    lhs->execute(vm);
+    rhs->execute(vm);
+    float lhsVal = lhs->value();
+    float rhsVal = rhs->value();
+
+    if (op == "+") {
+      v = lhsVal + rhsVal;
+    } else if (op == "-") {
+      v = lhsVal - rhsVal;
+    } else if (op == "/") {
+      v = lhsVal / rhsVal;
+    } else if (op == "*") {
+      v = lhsVal * rhsVal;
+    }
+  }
+  float value() { return v; }
 };
 
 struct LoopNode : Node {

@@ -25,3 +25,7 @@ void panic(string msg) {
   printf("ERROR: %s", msg.c_str());
   exit(EXIT_FAILURE);
 }
+
+bool eqf(float a, float b, float epsilon = 0.005f) {
+  return (fabs(a - b) < epsilon);
+}
