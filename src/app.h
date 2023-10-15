@@ -6,6 +6,7 @@
 #include "config.h"
 #include "logo.h"
 #include "raylib.h"
+#include "raymath.h"
 #include "text_input.h"
 #include "vm.h"
 
@@ -14,7 +15,6 @@ using namespace std;
 struct App {
   TextInput textInput{};
   VM vm{};
-  Texture2D turtleTexture;
 
   App() {}
   App(const App &) = delete;
@@ -28,8 +28,6 @@ struct App {
     SetTargetFPS(60);
 
     reset();
-
-    turtleTexture = LoadTexture("./resource/image/turtle.png");
   }
 
   void reset() { vm.reset(); }
@@ -63,18 +61,17 @@ struct App {
     DrawFPS(GetScreenWidth() - 100, 4);
     textInput.draw();
 
+    // Draw turtle (triangle).
+    Vector2 p1 =
+        Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);
+    Vector2 p2 =
+        Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
+    Vector2 p3 =
+        Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
+    DrawTriangle(p1, p2, p3, GREEN);
+
     for (auto &line : vm.history) {
       DrawLineV(line.from, line.to, BLACK);
     }
-
-    DrawTexturePro(turtleTexture,
-                   Rectangle{0.0f, 0.0f, float(turtleTexture.width),
-                             float(turtleTexture.height)},
-                   Rectangle{vm.pos.x, vm.pos.y, float(turtleTexture.width),
-                             float(turtleTexture.height)},
-
-                   Vector2{float(turtleTexture.width) / 2.0f,
-                           float(turtleTexture.height) / 2.0f},
-                   vm.angle, WHITE);
   }
 };
