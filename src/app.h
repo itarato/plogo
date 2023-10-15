@@ -25,7 +25,7 @@ struct App {
     SetConfigFlags(win_flags);
 
     InitWindow(config.win_w, config.win_h, "P-Logo");
-    SetTargetFPS(60);
+    SetTargetFPS(24);
 
     reset();
   }
