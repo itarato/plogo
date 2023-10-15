@@ -10,11 +10,12 @@
 #include <utility>
 #include <vector>
 
+#include "util.h"
 #include "vm.h"
 
 using namespace std;
 
-const vector<string> keywords{"fn", "if", "else", "for"};
+const vector<string> keywords{"fn", "if", "else", "loop"};
 
 enum class LexemeKind {
   Keyword,
@@ -55,6 +56,11 @@ struct Lexeme {
   Lexeme(LexemeKind kind, string v) : kind(kind), v(v) {}
 };
 
+void assert_lexeme(Lexeme lexeme, LexemeKind kind, string v) {
+  assert(lexeme.kind == kind);
+  assert(lexeme.v == v);
+}
+
 struct Lexer {
   string code;
   size_t ptr = 0;
@@ -81,6 +87,12 @@ struct Lexer {
         next();
       } else if (c == ')') {
         lexemes.push_back(Lexeme(LexemeKind::ParenClose));
+        next();
+      } else if (c == '{') {
+        lexemes.push_back(Lexeme(LexemeKind::BraceOpen));
+        next();
+      } else if (c == '}') {
+        lexemes.push_back(Lexeme(LexemeKind::BraceClose));
         next();
       } else if (c == ',') {
         lexemes.push_back(Lexeme(LexemeKind::Comma));
@@ -176,6 +188,25 @@ struct FloatExpr : Expr {
   ~FloatExpr() {}
 };
 
+struct LoopNode : Node {
+  unique_ptr<Expr> count;
+  vector<unique_ptr<Node>> statements;
+
+  LoopNode(unique_ptr<Expr> count, vector<unique_ptr<Node>> statements)
+      : count(std::move(count)), statements(std::move(statements)) {}
+  ~LoopNode() {}
+
+  void execute(VM *vm) {
+    count->execute(vm);
+    unsigned int iter = (unsigned int)count->value();
+    for (unsigned int i = 0; i < iter; i++) {
+      for (auto &statement : statements) {
+        statement->execute(vm);
+      }
+    }
+  }
+};
+
 struct FnCallNode : Node {
   string fnName;
   vector<unique_ptr<Expr>> args;
@@ -224,10 +255,39 @@ struct Parser {
     vector<unique_ptr<Ast::Node>> statements;
 
     while (!isEnd()) {
-      statements.push_back(parse_fncall());
+      statements.push_back(parse_statement());
     }
 
     return Ast::Program(std::move(statements));
+  }
+
+  unique_ptr<Ast::Node> parse_statement() {
+    if (peek().kind == LexemeKind::Keyword && peek().v == "loop") {
+      return parse_loop();
+    } else {
+      return parse_fncall();
+    }
+
+    panic("Unkown keyword for statement");
+  }
+
+  unique_ptr<Ast::LoopNode> parse_loop() {
+    assert_lexeme(next(), LexemeKind::Keyword, "loop");
+    assert(next().kind == LexemeKind::ParenOpen);
+
+    unique_ptr<Ast::Expr> count = parse_expr();
+
+    assert(next().kind == LexemeKind::ParenClose);
+    assert(next().kind == LexemeKind::BraceOpen);
+
+    vector<unique_ptr<Ast::Node>> statements;
+    while (peek().kind != LexemeKind::BraceClose) {
+      statements.push_back(parse_statement());
+    }
+
+    assert(next().kind == LexemeKind::BraceClose);
+
+    return make_unique<Ast::LoopNode>(std::move(count), std::move(statements));
   }
 
   unique_ptr<Ast::FnCallNode> parse_fncall() {

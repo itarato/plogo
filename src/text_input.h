@@ -12,7 +12,7 @@
 using namespace std;
 
 #define TEXT_MARGIN 4
-#define TEXT_SIZE 10
+#define TEXT_SIZE 20
 
 struct TextInput {
   string command{};
@@ -39,6 +39,12 @@ struct TextInput {
             break;
           case KEY_ZERO:
             newChar = ')';
+            break;
+          case KEY_LEFT_BRACKET:
+            newChar = '{';
+            break;
+          case KEY_RIGHT_BRACKET:
+            newChar = '}';
             break;
           default:
             newChar = char(keyCode);

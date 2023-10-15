@@ -20,3 +20,8 @@ inline T toRange(T v, T vmin, T vmax) {
   v = max(v, vmin);
   return v;
 }
+
+void panic(string msg) {
+  printf("ERROR: %s", msg.c_str());
+  exit(EXIT_FAILURE);
+}
