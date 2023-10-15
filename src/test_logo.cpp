@@ -2,28 +2,10 @@
 #include <utility>
 
 #include "logo.h"
+#include "util.h"
 #include "vm.h"
 
-#define FAIL(...) log("\x1b[91mFAIL\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
-#define PASS(...) log("\x1b[92mPASS\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
-#define INFO(...) log("\x1b[90mINFO\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
-
-#define ASSERT(exp, msg) (exp ? PASS(msg) : FAIL(msg))
-
 using namespace std;
-
-void log(const char* level, const char* fileName, int lineNo, const char* s,
-         ...) {
-  va_list args;
-  va_start(args, s);
-
-  printf("[%s][\x1b[93m%s\x1b[39m:\x1b[96m%d\x1b[0m] \x1b[94m", level, fileName,
-         lineNo);
-  vprintf(s, args);
-  printf("\x1b[0m\n");
-
-  va_end(args);
-}
 
 void test_tokens(string code, vector<pair<LexemeKind, string>> expected) {
   Lexer lexer{code};
@@ -75,6 +57,12 @@ int main() {
                                        {LexemeKind::ParenClose, ""},
                                        {LexemeKind::BraceClose, ""}});
 
+  test_tokens("10 + a", {
+                            {LexemeKind::Number, "10"},
+                            {LexemeKind::Op, "+"},
+                            {LexemeKind::Name, "a"},
+                        });
+
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");
     ASSERT(eqf(vm->pos.x, 0.0), "x is 0.0");
@@ -92,6 +80,12 @@ int main() {
     ASSERT(eqf(vm->pos.x, 100.0), "x is 100.0");
     ASSERT(eqf(vm->pos.y, 0.0), "y is 0.0");
   });
+
+  test_vm("forward(10 + 20)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -30.0), "y is -30.0"); });
+
+  test_vm("forward(20 - 5)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -15.0), "y is -15.0"); });
 
   PASS("all");
 }

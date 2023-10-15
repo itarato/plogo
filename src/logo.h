@@ -99,7 +99,9 @@ struct Lexer {
         lexemes.push_back(Lexeme(LexemeKind::Comma));
         next();
       } else if (c == '+' || c == '-' || c == '*' || c == '/') {
-        lexemes.push_back(Lexeme(LexemeKind::Op, to_string(c)));
+        string opStr{c};
+        lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
+        next();
       } else {
         cerr << "Unknown character in lexing\n";
         exit(EXIT_FAILURE);
@@ -191,6 +193,18 @@ struct FloatExpr : Expr {
   ~FloatExpr() {}
 };
 
+struct NameExpr : Expr {
+  float v;
+  string name;
+
+  NameExpr(string name) : name(name) {}
+
+  void execute(VM *vm) { v = vm->frames.back().variables[name]; }
+  float value() { return v; }
+
+  ~NameExpr() {}
+};
+
 struct BinOpExpr : Expr {
   string op;
   unique_ptr<Expr> lhs;
@@ -250,18 +264,22 @@ struct FnCallNode : Node {
   void execute(VM *vm) {
     if (fnName == "forward" || fnName == "f") {
       assert(args.size() == 1);
+      args[0]->execute(vm);
       vm->forward(args[0]->value());
     }
     if (fnName == "backward" || fnName == "b") {
       assert(args.size() == 1);
+      args[0]->execute(vm);
       vm->backward(args[0]->value());
     }
     if (fnName == "left" || fnName == "l") {
       assert(args.size() == 1);
+      args[0]->execute(vm);
       vm->left(args[0]->value());
     }
     if (fnName == "right" || fnName == "r") {
       assert(args.size() == 1);
+      args[0]->execute(vm);
       vm->right(args[0]->value());
     }
     if (fnName == "up" || fnName == "u") {
@@ -348,10 +366,50 @@ struct Parser {
   }
 
   unique_ptr<Ast::Expr> parse_expr() {
+    vector<unique_ptr<Ast::Expr>> exprList{};
+    vector<string> ops{};
+
+    while (true) {
+      if (peek().kind == LexemeKind::Number) {
+        exprList.push_back(parse_expr_number());
+      } else if (peek().kind == LexemeKind::Name) {
+        exprList.push_back(parse_expr_name());
+      }
+
+      if (peek().kind == LexemeKind::Op) {
+        ops.push_back(next().v);
+      } else {
+        break;
+      }
+    }
+
+    assert(exprList.size() == ops.size() + 1);
+
+    for (auto &op : ops) {
+      auto rhs = std::move(exprList.back());
+      exprList.pop_back();
+      auto lhs = std::move(exprList.back());
+      exprList.pop_back();
+
+      unique_ptr<Ast::Expr> newExpr =
+          make_unique<Ast::BinOpExpr>(op, std::move(lhs), std::move(rhs));
+      exprList.push_back(std::move(newExpr));
+    }
+
+    assert(exprList.size() == 1);
+    return std::move(exprList.back());
+  }
+
+  unique_ptr<Ast::Expr> parse_expr_number() {
     Lexeme val = next();
     assert(val.kind == LexemeKind::Number);
-
     return make_unique<Ast::FloatExpr>(stof(val.v));
+  }
+
+  unique_ptr<Ast::Expr> parse_expr_name() {
+    Lexeme val = next();
+    assert(val.kind == LexemeKind::Name);
+    return make_unique<Ast::NameExpr>(val.v);
   }
 
   bool isEnd() const { return ptr >= lexemes.size(); }
