@@ -63,6 +63,20 @@ int main() {
                             {LexemeKind::Name, "a"},
                         });
 
+  test_tokens("fn circle(iter, size) { f(size) r(360 / iter) }",
+              {
+                  {LexemeKind::Keyword, "fn"},  {LexemeKind::Name, "circle"},
+                  {LexemeKind::ParenOpen, ""},  {LexemeKind::Name, "iter"},
+                  {LexemeKind::Comma, ""},      {LexemeKind::Name, "size"},
+                  {LexemeKind::ParenClose, ""}, {LexemeKind::BraceOpen, ""},
+                  {LexemeKind::Name, "f"},      {LexemeKind::ParenOpen, ""},
+                  {LexemeKind::Name, "size"},   {LexemeKind::ParenClose, ""},
+                  {LexemeKind::Name, "r"},      {LexemeKind::ParenOpen, ""},
+                  {LexemeKind::Number, "360"},  {LexemeKind::Op, "/"},
+                  {LexemeKind::Name, "iter"},   {LexemeKind::ParenClose, ""},
+                  {LexemeKind::BraceClose, ""},
+              });
+
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");
     ASSERT(eqf(vm->pos.x, 0.0), "x is 0.0");
