@@ -14,7 +14,7 @@ using namespace std;
 struct App {
   TextInput textInput{};
   VM vm{};
-  optional<string> command{nullopt};
+  Texture2D turtleTexture;
 
   App() {}
   App(const App &) = delete;
@@ -28,6 +28,8 @@ struct App {
     SetTargetFPS(60);
 
     reset();
+
+    turtleTexture = LoadTexture("./resource/image/turtle.png");
   }
 
   void reset() { vm.reset(); }
@@ -46,11 +48,8 @@ struct App {
     }
   }
 
-  void update() { command = textInput.update(); }
-
-  void draw() {
-    DrawFPS(GetScreenWidth() - 100, 4);
-    textInput.draw();
+  void update() {
+    auto command = textInput.update();
 
     if (command.has_value()) {
       Lexer lexer{command.value()};
@@ -58,5 +57,24 @@ struct App {
       Ast::Program prg = parser.parse();
       prg.execute(&vm);
     }
+  }
+
+  void draw() const {
+    DrawFPS(GetScreenWidth() - 100, 4);
+    textInput.draw();
+
+    for (auto &line : vm.history) {
+      DrawLineV(line.from, line.to, BLACK);
+    }
+
+    DrawTexturePro(turtleTexture,
+                   Rectangle{0.0f, 0.0f, float(turtleTexture.width),
+                             float(turtleTexture.height)},
+                   Rectangle{vm.pos.x, vm.pos.y, float(turtleTexture.width),
+                             float(turtleTexture.height)},
+
+                   Vector2{float(turtleTexture.width) / 2.0f,
+                           float(turtleTexture.height) / 2.0f},
+                   vm.angle, WHITE);
   }
 };

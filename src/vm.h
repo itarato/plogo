@@ -13,12 +13,18 @@ struct Frame {
   unordered_map<string, float> variables{};
 };
 
+struct Line {
+  Vector2 from;
+  Vector2 to;
+};
+
 struct VM {
   Vector2 pos{};
   float angle = 0.0f;
   bool isDown = true;
 
   vector<Frame> frames{};
+  vector<Line> history{};
 
   VM() {}
 
@@ -36,11 +42,11 @@ struct VM {
     Vector2 prevPos{pos};
 
     pos.x += sinf(rad()) * v;
-    pos.y += cosf(rad()) * v;
+    pos.y += cosf(rad()) * -v;
 
-#ifndef NORAYLIB
-    DrawLine(prevPos.x, prevPos.y, pos.x, pos.y, BLACK);
-#endif
+    if (isDown) {
+      history.emplace_back(prevPos, pos);
+    }
   }
 
   void backward(float v) { forward(-v); }

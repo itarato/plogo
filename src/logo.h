@@ -184,9 +184,29 @@ struct FnCallNode : Node {
       : fnName(fnName), args(std::move(args)) {}
 
   void execute(VM *vm) {
-    if (fnName == "forward") {
+    if (fnName == "forward" || fnName == "f") {
       assert(args.size() == 1);
       vm->forward(args[0]->value());
+    }
+    if (fnName == "backward" || fnName == "b") {
+      assert(args.size() == 1);
+      vm->backward(args[0]->value());
+    }
+    if (fnName == "left" || fnName == "l") {
+      assert(args.size() == 1);
+      vm->left(args[0]->value());
+    }
+    if (fnName == "right" || fnName == "r") {
+      assert(args.size() == 1);
+      vm->right(args[0]->value());
+    }
+    if (fnName == "up" || fnName == "u") {
+      assert(args.size() == 0);
+      vm->isDown = false;
+    }
+    if (fnName == "down" || fnName == "d") {
+      assert(args.size() == 0);
+      vm->isDown = true;
     }
   }
 
