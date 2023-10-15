@@ -10,7 +10,7 @@
 
 using namespace std;
 struct Frame {
-  unordered_map<string, float> variables;
+  unordered_map<string, float> variables{};
 };
 
 struct VM {
@@ -20,15 +20,27 @@ struct VM {
 
   vector<Frame> frames{};
 
-  VM() : frames({Frame{}}) {}
+  VM() {}
+
+  void reset() {
+    frames.clear();
+    frames.emplace_back();
+
+    angle = 0.0f;
+    isDown = true;
+    pos.x = GetScreenWidth() >> 1;
+    pos.y = GetScreenHeight() >> 1;
+  }
 
   void forward(float v) {
-    Vector2 currentPos{pos};
+    Vector2 prevPos{pos};
 
     pos.x += sinf(rad()) * v;
     pos.y += cosf(rad()) * v;
 
-    DrawLine(currentPos.x, currentPos.y, pos.x, pos.y, BLACK);
+#ifndef NORAYLIB
+    DrawLine(prevPos.x, prevPos.y, pos.x, pos.y, BLACK);
+#endif
   }
 
   void backward(float v) { forward(-v); }

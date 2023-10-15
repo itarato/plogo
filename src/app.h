@@ -30,7 +30,7 @@ struct App {
     reset();
   }
 
-  void reset() {}
+  void reset() { vm.reset(); }
 
   void run() {
     while (!WindowShouldClose()) {

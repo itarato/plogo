@@ -17,7 +17,7 @@ OBJ=$(addsuffix .o,$(basename $(SRC)))
 all: CXXFLAGS += -O3
 all: executable
 
-debug: CXXFLAGS += -g -O0
+debug: CXXFLAGS += -g -O0 -DNORAYLIB
 debug: executable
 
 executable: $(OBJ)

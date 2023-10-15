@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <optional>
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@ using namespace std;
 struct TextInput {
   string command{};
   bool isActive = true;
+  bool shiftOn = false;
 
   TextInput() {}
 
@@ -29,7 +31,24 @@ struct TextInput {
     // Text input.
     int keyCode = GetKeyPressed();
     if (keyCode >= 32 && keyCode <= 126) {
-      command.push_back(char(keyCode));
+      char newChar;
+      if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
+        switch (keyCode) {
+          case KEY_NINE:
+            newChar = '(';
+            break;
+          case KEY_ZERO:
+            newChar = ')';
+            break;
+          default:
+            newChar = char(keyCode);
+            break;
+        }
+      } else {
+        newChar = tolower(char(keyCode));
+      }
+
+      command.push_back(newChar);
     }
 
     if (keyCode == KEY_BACKSPACE && !command.empty()) {
@@ -37,7 +56,9 @@ struct TextInput {
     }
 
     if (keyCode == KEY_ENTER) {
-      return command;
+      string out{command};
+      command.clear();
+      return out;
     } else {
       return nullopt;
     }
