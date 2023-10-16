@@ -30,25 +30,6 @@ enum class LexemeKind {
   Op,
 };
 
-string lexemeKindToString(LexemeKind kind) {
-  switch (kind) {
-    case LexemeKind::Keyword:
-      return "keyword";
-    case LexemeKind::Number:
-      return "number";
-    case LexemeKind::Name:
-      return "name";
-    case LexemeKind::ParenOpen:
-      return "(";
-    case LexemeKind::ParenClose:
-      return ")";
-    case LexemeKind::Comma:
-      return ",";
-    default:
-      return "unknown";
-  }
-}
-
 struct Lexeme {
   LexemeKind kind;
   string v{};
@@ -148,6 +129,10 @@ struct Lexer {
 
 namespace Ast {
 
+struct ExprValue;
+ExprValue makeFloatVal(float v);
+ExprValue makeBoolVal(bool v);
+
 /**
 
 prog      = *statements
@@ -177,8 +162,65 @@ struct Program : Node {
   ~Program() {}
 };
 
+enum class ExprValueKind {
+  Number,
+  Boolean,
+};
+
+struct ExprValue {
+  union {
+    float floatVal;
+    bool boolVal;
+  } value;
+  ExprValueKind kind;
+
+  ExprValue add(ExprValue other) {
+    if (!is_same_kind(other, ExprValueKind::Number)) {
+      panic("Cannot sum non number values");
+    }
+
+    return makeFloatVal(value.floatVal + other.value.floatVal);
+  }
+
+  ExprValue sub(ExprValue other) {
+    if (!is_same_kind(other, ExprValueKind::Number)) {
+      panic("Cannot subtract non number values");
+    }
+
+    return makeFloatVal(value.floatVal - other.value.floatVal);
+  }
+
+  ExprValue mul(ExprValue other) {
+    if (!is_same_kind(other, ExprValueKind::Number)) {
+      panic("Cannot multiply non number values");
+    }
+
+    return makeFloatVal(value.floatVal * other.value.floatVal);
+  }
+
+  ExprValue div(ExprValue other) {
+    if (!is_same_kind(other, ExprValueKind::Number)) {
+      panic("Cannot divide non number values");
+    }
+
+    return makeFloatVal(value.floatVal / other.value.floatVal);
+  }
+
+  inline bool is_same_kind(ExprValue other, ExprValueKind assertedKind) {
+    return kind == assertedKind && other.kind == assertedKind;
+  }
+};
+
+ExprValue makeFloatVal(float v) {
+  return {.value = {.floatVal = v}, .kind = ExprValueKind::Number};
+}
+
+ExprValue makeBoolVal(bool v) {
+  return {.value = {.boolVal = v}, .kind = ExprValueKind::Boolean};
+}
+
 struct Expr : Node {
-  virtual float value() = 0;
+  virtual ExprValue value() = 0;
   virtual ~Expr() {}
 };
 
@@ -188,19 +230,19 @@ struct FloatExpr : Expr {
   FloatExpr(float v) : v(v) {}
 
   void execute(VM *vm) {}
-  float value() { return v; }
+  ExprValue value() { return makeFloatVal(v); }
 
   ~FloatExpr() {}
 };
 
 struct NameExpr : Expr {
-  float v;
+  ExprValue v;
   string name;
 
   NameExpr(string name) : name(name) {}
 
   void execute(VM *vm) { v = vm->frames.back().variables[name]; }
-  float value() { return v; }
+  ExprValue value() { return v; }
 
   ~NameExpr() {}
 };
@@ -209,7 +251,7 @@ struct BinOpExpr : Expr {
   string op;
   unique_ptr<Expr> lhs;
   unique_ptr<Expr> rhs;
-  float v;
+  ExprValue v;
 
   BinOpExpr(string op, unique_ptr<Expr> lhs, unique_ptr<Expr> rhs)
       : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
@@ -219,20 +261,20 @@ struct BinOpExpr : Expr {
   void execute(VM *vm) {
     lhs->execute(vm);
     rhs->execute(vm);
-    float lhsVal = lhs->value();
-    float rhsVal = rhs->value();
+    ExprValue lhsVal = lhs->value();
+    ExprValue rhsVal = rhs->value();
 
     if (op == "+") {
-      v = lhsVal + rhsVal;
+      v = lhsVal.add(rhsVal);
     } else if (op == "-") {
-      v = lhsVal - rhsVal;
+      v = lhsVal.sub(rhsVal);
     } else if (op == "/") {
-      v = lhsVal / rhsVal;
+      v = lhsVal.div(rhsVal);
     } else if (op == "*") {
-      v = lhsVal * rhsVal;
+      v = lhsVal.mul(rhsVal);
     }
   }
-  float value() { return v; }
+  ExprValue value() { return v; }
 };
 
 struct LoopNode : Node {
@@ -245,7 +287,12 @@ struct LoopNode : Node {
 
   void execute(VM *vm) {
     count->execute(vm);
-    unsigned int iter = (unsigned int)count->value();
+
+    if (count->value().kind != ExprValueKind::Number) {
+      panic("Only number can be a loop count");
+    }
+
+    unsigned int iter = (unsigned int)count->value().value.floatVal;
     for (unsigned int i = 0; i < iter; i++) {
       for (auto &statement : statements) {
         statement->execute(vm);
@@ -322,19 +369,23 @@ struct FnCallNode : Node {
     if (fnName == "forward" || fnName == "f") {
       assert(args.size() == 1);
       args[0]->execute(vm);
-      vm->forward(args[0]->value());
+      assert(args[0]->value().kind == ExprValueKind::Number);
+      vm->forward(args[0]->value().value.floatVal);
     } else if (fnName == "backward" || fnName == "b") {
       assert(args.size() == 1);
       args[0]->execute(vm);
-      vm->backward(args[0]->value());
+      assert(args[0]->value().kind == ExprValueKind::Number);
+      vm->backward(args[0]->value().value.floatVal);
     } else if (fnName == "left" || fnName == "l") {
       assert(args.size() == 1);
       args[0]->execute(vm);
-      vm->left(args[0]->value());
+      assert(args[0]->value().kind == ExprValueKind::Number);
+      vm->left(args[0]->value().value.floatVal);
     } else if (fnName == "right" || fnName == "r") {
       assert(args.size() == 1);
       args[0]->execute(vm);
-      vm->right(args[0]->value());
+      assert(args[0]->value().kind == ExprValueKind::Number);
+      vm->right(args[0]->value().value.floatVal);
     } else if (fnName == "up" || fnName == "u") {
       assert(args.size() == 0);
       vm->isDown = false;

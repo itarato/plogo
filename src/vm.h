@@ -14,10 +14,11 @@ using namespace std;
 namespace Ast {
 struct Node;
 struct ExecutableFnNode;
+struct ExprValue;
 }  // namespace Ast
 
 struct Frame {
-  unordered_map<string, float> variables{};
+  unordered_map<string, Ast::ExprValue> variables{};
 };
 
 struct Line {
