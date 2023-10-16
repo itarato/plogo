@@ -77,6 +77,12 @@ int main() {
                   {LexemeKind::BraceClose, ""},
               });
 
+  test_tokens("a > 1", {
+                           {LexemeKind::Name, "a"},
+                           {LexemeKind::Op, ">"},
+                           {LexemeKind::Number, "1"},
+                       });
+
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");
     ASSERT(eqf(vm->pos.x, 0.0), "x is 0.0");
