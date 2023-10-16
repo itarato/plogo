@@ -263,7 +263,9 @@ struct ExecutableFnNode : Node {
   ~ExecutableFnNode() {}
 
   void execute(VM *vm) {
-    // UNIMPLEMENTED
+    for (auto &statement : statements) {
+      statement->execute(vm);
+    }
   }
 };
 
@@ -316,6 +318,7 @@ struct FnCallNode : Node {
       if (!vm->functions.contains(fnName)) {
         PANIC("Unrecognized function name: %s", fnName.c_str());
       }
+
       auto fn = vm->functions[fnName];
 
       assert(args.size() == fn->argNames.size());

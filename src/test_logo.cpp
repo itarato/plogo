@@ -101,5 +101,8 @@ int main() {
   test_vm("forward(20 - 5)",
           [](VM* vm) { ASSERT(eqf(vm->pos.y, -15.0), "y is -15.0"); });
 
+  test_vm("fn walk(x) { f(x) } walk(10)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
+
   PASS("all");
 }
