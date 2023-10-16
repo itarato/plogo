@@ -254,6 +254,33 @@ struct LoopNode : Node {
   }
 };
 
+struct IfNode : Node {
+  unique_ptr<Expr> condNode;
+  vector<unique_ptr<Node>> trueStatements;
+  vector<unique_ptr<Node>> falseStatements;
+
+  IfNode(unique_ptr<Expr> condNode, vector<unique_ptr<Node>> trueStatements,
+         vector<unique_ptr<Node>> falseStatements)
+      : condNode(std::move(condNode)),
+        trueStatements(std::move(trueStatements)),
+        falseStatements(std::move(falseStatements)) {}
+  ~IfNode() {}
+
+  void execute(VM *vm) {
+    condNode->execute(vm);
+
+    if (true) {
+      for (auto &statement : trueStatements) {
+        statement->execute(vm);
+      }
+    } else {
+      for (auto &statement : falseStatements) {
+        statement->execute(vm);
+      }
+    }
+  }
+};
+
 struct ExecutableFnNode : Node {
   vector<string> argNames;
   vector<unique_ptr<Node>> statements;
@@ -359,14 +386,48 @@ struct Parser {
   unique_ptr<Ast::Node> parse_statement() {
     if (peek().kind == LexemeKind::Keyword && peek().v == "loop") {
       return parse_loop();
-    }
-    if (peek().kind == LexemeKind::Keyword && peek().v == "fn") {
+    } else if (peek().kind == LexemeKind::Keyword && peek().v == "fn") {
       return parse_fndef();
+    } else if (peek().kind == LexemeKind::Keyword && peek().v == "if") {
+      return parse_if();
     } else {
       return parse_fncall();
     }
 
     panic("Unkown keyword for statement");
+  }
+
+  unique_ptr<Ast::IfNode> parse_if() {
+    assert_lexeme(next(), LexemeKind::Keyword, "if");
+    assert(next().kind == LexemeKind::ParenOpen);
+
+    unique_ptr<Ast::Expr> condExpr = parse_expr();
+
+    assert(next().kind == LexemeKind::ParenClose);
+    assert(next().kind == LexemeKind::BraceOpen);
+
+    vector<unique_ptr<Ast::Node>> trueStatements{};
+    while (peek().kind != LexemeKind::BraceClose) {
+      trueStatements.push_back(parse_statement());
+    }
+
+    assert(next().kind == LexemeKind::BraceClose);
+
+    vector<unique_ptr<Ast::Node>> falseStatements{};
+    if (peek().kind == LexemeKind::Keyword && peek().v == "else") {
+      assert_lexeme(next(), LexemeKind::Keyword, "else");
+      assert(next().kind == LexemeKind::BraceOpen);
+
+      while (peek().kind != LexemeKind::BraceClose) {
+        falseStatements.push_back(parse_statement());
+      }
+
+      assert(next().kind == LexemeKind::BraceClose);
+    }
+
+    return make_unique<Ast::IfNode>(std::move(condExpr),
+                                    std::move(trueStatements),
+                                    std::move(falseStatements));
   }
 
   unique_ptr<Ast::FnDefNode> parse_fndef() {
@@ -414,7 +475,7 @@ struct Parser {
     assert(next().kind == LexemeKind::ParenClose);
     assert(next().kind == LexemeKind::BraceOpen);
 
-    vector<unique_ptr<Ast::Node>> statements;
+    vector<unique_ptr<Ast::Node>> statements{};
     while (peek().kind != LexemeKind::BraceClose) {
       statements.push_back(parse_statement());
     }
