@@ -254,6 +254,34 @@ struct LoopNode : Node {
   }
 };
 
+struct ExecutableFnNode : Node {
+  vector<string> argNames;
+  vector<unique_ptr<Node>> statements;
+
+  ExecutableFnNode(vector<string> argNames, vector<unique_ptr<Node>> statements)
+      : argNames(argNames), statements(std::move(statements)) {}
+  ~ExecutableFnNode() {}
+
+  void execute(VM *vm) {
+    // UNIMPLEMENTED
+  }
+};
+
+struct FnDefNode : Node {
+  string name;
+  shared_ptr<ExecutableFnNode> fn;
+
+  FnDefNode(string name, vector<string> argNames,
+            vector<unique_ptr<Node>> statements)
+      : name(name) {
+    fn = make_shared<ExecutableFnNode>(std::move(argNames),
+                                       std::move(statements));
+  }
+  ~FnDefNode() {}
+
+  void execute(VM *vm) { vm->functions[name] = fn; }
+};
+
 struct FnCallNode : Node {
   string fnName;
   vector<unique_ptr<Expr>> args;
@@ -266,29 +294,42 @@ struct FnCallNode : Node {
       assert(args.size() == 1);
       args[0]->execute(vm);
       vm->forward(args[0]->value());
-    }
-    if (fnName == "backward" || fnName == "b") {
+    } else if (fnName == "backward" || fnName == "b") {
       assert(args.size() == 1);
       args[0]->execute(vm);
       vm->backward(args[0]->value());
-    }
-    if (fnName == "left" || fnName == "l") {
+    } else if (fnName == "left" || fnName == "l") {
       assert(args.size() == 1);
       args[0]->execute(vm);
       vm->left(args[0]->value());
-    }
-    if (fnName == "right" || fnName == "r") {
+    } else if (fnName == "right" || fnName == "r") {
       assert(args.size() == 1);
       args[0]->execute(vm);
       vm->right(args[0]->value());
-    }
-    if (fnName == "up" || fnName == "u") {
+    } else if (fnName == "up" || fnName == "u") {
       assert(args.size() == 0);
       vm->isDown = false;
-    }
-    if (fnName == "down" || fnName == "d") {
+    } else if (fnName == "down" || fnName == "d") {
       assert(args.size() == 0);
       vm->isDown = true;
+    } else {
+      if (!vm->functions.contains(fnName)) {
+        PANIC("Unrecognized function name: %s", fnName.c_str());
+      }
+      auto fn = vm->functions[fnName];
+
+      assert(args.size() == fn->argNames.size());
+
+      Frame newFrame{};
+
+      for (int i = 0; i < (int)args.size(); i++) {
+        args[i]->execute(vm);
+        newFrame.variables[fn->argNames[i]] = args[i]->value();
+      }
+
+      vm->frames.push_back(newFrame);
+      fn->execute(vm);
+      vm->frames.pop_back();
     }
   }
 
@@ -315,11 +356,50 @@ struct Parser {
   unique_ptr<Ast::Node> parse_statement() {
     if (peek().kind == LexemeKind::Keyword && peek().v == "loop") {
       return parse_loop();
+    }
+    if (peek().kind == LexemeKind::Keyword && peek().v == "fn") {
+      return parse_fndef();
     } else {
       return parse_fncall();
     }
 
     panic("Unkown keyword for statement");
+  }
+
+  unique_ptr<Ast::FnDefNode> parse_fndef() {
+    assert_lexeme(next(), LexemeKind::Keyword, "fn");
+
+    Lexeme nameToken = next();
+    assert(nameToken.kind == LexemeKind::Name);
+
+    assert(next().kind == LexemeKind::ParenOpen);
+
+    vector<string> argNames{};
+    while (true) {
+      if (peek().kind == LexemeKind::ParenClose) break;
+
+      argNames.push_back(next().v);
+
+      if (peek().kind == LexemeKind::Comma) {
+        next();
+        continue;
+      } else {
+        break;
+      }
+    }
+
+    assert(next().kind == LexemeKind::ParenClose);
+    assert(next().kind == LexemeKind::BraceOpen);
+
+    vector<unique_ptr<Ast::Node>> statements;
+    while (peek().kind != LexemeKind::BraceClose) {
+      statements.push_back(parse_statement());
+    }
+
+    assert(next().kind == LexemeKind::BraceClose);
+
+    return make_unique<Ast::FnDefNode>(nameToken.v, argNames,
+                                       std::move(statements));
   }
 
   unique_ptr<Ast::LoopNode> parse_loop() {

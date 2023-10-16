@@ -6,9 +6,16 @@
 #include <unordered_map>
 #include <vector>
 
+#include "logo.h"
 #include "raylib.h"
 
 using namespace std;
+
+namespace Ast {
+struct Node;
+struct ExecutableFnNode;
+}  // namespace Ast
+
 struct Frame {
   unordered_map<string, float> variables{};
 };
@@ -25,6 +32,7 @@ struct VM {
 
   vector<Frame> frames{};
   vector<Line> history{};
+  unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
   VM() {}
 
