@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <optional>
 #include <vector>
 
@@ -16,6 +17,8 @@ struct App {
   TextInput textInput{};
   VM vm{};
 
+  char *sourceFileName{nullptr};
+
   App() {}
   App(const App &) = delete;
   App(App &&) = delete;
@@ -28,6 +31,19 @@ struct App {
     SetTargetFPS(24);
 
     reset();
+  }
+
+  void setSourceFile(char *fileName) {
+    sourceFileName = fileName;
+    vm.reset();
+
+    std::string fileContent;
+    std::getline(std::ifstream(fileName), fileContent, '\0');
+
+    Lexer lexer{fileContent};
+    Parser parser{lexer.parse()};
+    Ast::Program prg = parser.parse();
+    prg.execute(&vm);
   }
 
   void reset() { vm.reset(); }

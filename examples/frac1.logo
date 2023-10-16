@@ -1,0 +1,14 @@
+fn triangle(size, limit) {
+    loop (3) {
+        if (size > limit) {
+            triangle(size / 2, limit)
+        }
+
+        f(size)
+        r(120)
+    }
+}
+
+pos(200, 100)
+r(90)
+triangle(600, 10)

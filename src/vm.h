@@ -41,6 +41,10 @@ struct VM {
     frames.clear();
     frames.emplace_back();
 
+    history.clear();
+
+    functions.clear();
+
     angle = 0.0f;
     isDown = true;
     pos.x = GetScreenWidth() >> 1;
@@ -66,6 +70,11 @@ struct VM {
   }
 
   void right(float d) { left(-d); }
+
+  void setPos(float x, float y) {
+    pos.x = x;
+    pos.y = y;
+  }
 
   float rad() const { return (angle / 180.0) * numbers::pi; }
   void normalizeAngle() { angle = fmod(fmod(angle, 360) + 360.0f, 360); }

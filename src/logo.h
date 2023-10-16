@@ -383,24 +383,22 @@ struct FnCallNode : Node {
       : fnName(fnName), args(std::move(args)) {}
 
   void execute(VM *vm) {
+    for (auto &arg : args) arg->execute(vm);
+
     if (fnName == "forward" || fnName == "f") {
       assert(args.size() == 1);
-      args[0]->execute(vm);
       assert(args[0]->value().kind == ExprValueKind::Number);
       vm->forward(args[0]->value().value.floatVal);
     } else if (fnName == "backward" || fnName == "b") {
       assert(args.size() == 1);
-      args[0]->execute(vm);
       assert(args[0]->value().kind == ExprValueKind::Number);
       vm->backward(args[0]->value().value.floatVal);
     } else if (fnName == "left" || fnName == "l") {
       assert(args.size() == 1);
-      args[0]->execute(vm);
       assert(args[0]->value().kind == ExprValueKind::Number);
       vm->left(args[0]->value().value.floatVal);
     } else if (fnName == "right" || fnName == "r") {
       assert(args.size() == 1);
-      args[0]->execute(vm);
       assert(args[0]->value().kind == ExprValueKind::Number);
       vm->right(args[0]->value().value.floatVal);
     } else if (fnName == "up" || fnName == "u") {
@@ -409,6 +407,12 @@ struct FnCallNode : Node {
     } else if (fnName == "down" || fnName == "d") {
       assert(args.size() == 0);
       vm->isDown = true;
+    } else if (fnName == "pos" || fnName == "p") {
+      assert(args.size() == 2);
+      assert(args[0]->value().kind == ExprValueKind::Number);
+      assert(args[1]->value().kind == ExprValueKind::Number);
+      vm->setPos(args[0]->value().value.floatVal,
+                 args[1]->value().value.floatVal);
     } else {
       if (!vm->functions.contains(fnName)) {
         PANIC("Unrecognized function name: %s", fnName.c_str());
@@ -421,7 +425,6 @@ struct FnCallNode : Node {
       Frame newFrame{};
 
       for (int i = 0; i < (int)args.size(); i++) {
-        args[i]->execute(vm);
         newFrame.variables[fn->argNames[i]] = args[i]->value();
       }
 
