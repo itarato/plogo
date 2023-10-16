@@ -110,5 +110,11 @@ int main() {
   test_vm("fn walk(x) { f(x) } walk(10)",
           [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
 
+  test_vm("if (1.5 < 3.0) { f(10) } else { f(20) }",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
+
+  test_vm("if (1.5 > 3.0) { f(10) } else { f(20) }",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -20.0), "y is -20.0"); });
+
   PASS("all");
 }

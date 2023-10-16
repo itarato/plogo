@@ -208,6 +208,14 @@ struct ExprValue {
     return makeFloatVal(value.floatVal / other.value.floatVal);
   }
 
+  ExprValue lt(ExprValue other) {
+    if (!is_same_kind(other, ExprValueKind::Number)) {
+      panic("Cannot compare non number values");
+    }
+
+    return makeBoolVal(value.floatVal < other.value.floatVal);
+  }
+
   inline bool is_same_kind(ExprValue other, ExprValueKind assertedKind) {
     return kind == assertedKind && other.kind == assertedKind;
   }
@@ -274,6 +282,12 @@ struct BinOpExpr : Expr {
       v = lhsVal.div(rhsVal);
     } else if (op == "*") {
       v = lhsVal.mul(rhsVal);
+    } else if (op == "<") {
+      v = lhsVal.lt(rhsVal);
+    } else if (op == ">") {
+      v = rhsVal.lt(lhsVal);
+    } else {
+      PANIC("Unknown op: %s", op.c_str());
     }
   }
   ExprValue value() { return v; }
@@ -317,8 +331,9 @@ struct IfNode : Node {
 
   void execute(VM *vm) {
     condNode->execute(vm);
+    assert(condNode->value().kind == ExprValueKind::Boolean);
 
-    if (true) {
+    if (condNode->value().value.boolVal) {
       for (auto &statement : trueStatements) {
         statement->execute(vm);
       }
