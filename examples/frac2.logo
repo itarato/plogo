@@ -1,0 +1,17 @@
+fn frac(size, limit) {
+    loop (3) {
+        if (size > limit) {
+            f(size / 2)
+            l(120)
+            frac(size / 2.1, limit)
+            r(120)
+            f(size / 2)
+        } else {
+            f(size)
+        }
+        r(120)
+    }
+}
+
+pos(300, 600)
+frac(400, 10)
