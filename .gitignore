@@ -4,3 +4,4 @@ src/*.o
 src/logo
 test_logo
 imgui.ini
+plogo

@@ -50,3 +50,22 @@ triangle(600, 10)
 ```
 
 ![Triangle fractal](./misc/frac_triangle.png)
+
+## Variables
+
+Available variables to toggle (through the debug panel):
+
+```
+// Int values (0-500)
+va
+vb
+vc
+vd
+
+// Start position
+vstartx
+vstarty
+vstartangle
+```
+
+![Tree example](./misc/frac_tree.png)

@@ -1,0 +1,17 @@
+fn branch(size, angle, thick, dec, limit) {
+    t(thick)
+    f(size)
+
+    if (size > limit) {
+        l(angle)
+        branch(size / dec, angle, thick / dec, dec, limit)
+        r(angle * 2)
+        branch(size / dec, angle, thick / dec, dec, limit)
+        l(angle)
+    }
+
+    t(thick)
+    b(size)
+}
+
+branch(va, vb, vc, 100 / vd, 4)

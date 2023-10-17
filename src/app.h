@@ -19,6 +19,17 @@ struct App {
   TextInput textInput{};
   VM vm{};
 
+  int va{50};
+  int vb{50};
+  int vc{50};
+  int vd{50};
+
+  int vstartx{0};
+  int vstarty{0};
+  int vstartangle{0};
+
+  bool needScriptReload{false};
+
   char *sourceFileName{nullptr};
 
   App() {}
@@ -29,7 +40,7 @@ struct App {
     int win_flags = FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT;
     SetConfigFlags(win_flags);
 
-    InitWindow(config.win_w, config.win_h, "P-Logo");
+    InitWindow(config.win_w, config.win_h, "P-Logo V(0)");
     SetTargetFPS(24);
 
     rlImGuiSetup(true);
@@ -39,18 +50,40 @@ struct App {
 
   void setSourceFile(char *fileName) {
     sourceFileName = fileName;
+    scriptReload();
+  }
+
+  void scriptReload() {
+    if (sourceFileName == nullptr) return;
+
     vm.reset();
 
+    vm.frames.front().variables["va"] = Ast::makeFloatVal((float)va);
+    vm.frames.front().variables["vb"] = Ast::makeFloatVal((float)vb);
+    vm.frames.front().variables["vc"] = Ast::makeFloatVal((float)vc);
+    vm.frames.front().variables["vd"] = Ast::makeFloatVal((float)vd);
+
+    vm.pos.x = vstartx;
+    vm.pos.y = vstarty;
+    vm.angle = vstartangle;
+
     std::string fileContent;
-    std::getline(std::ifstream(fileName), fileContent, '\0');
+    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
 
     Lexer lexer{fileContent};
     Parser parser{lexer.parse()};
     Ast::Program prg = parser.parse();
     prg.execute(&vm);
+
+    needScriptReload = false;
   }
 
-  void reset() { vm.reset(); }
+  void reset() {
+    vm.reset();
+    vstartx = GetScreenWidth() >> 1;
+    vstarty = GetScreenHeight() >> 1;
+    vstartangle = 0;
+  }
 
   void run() {
     while (!WindowShouldClose()) {
@@ -62,12 +95,7 @@ struct App {
 
       draw();
 
-      rlImGuiBegin();
-
-      bool open = true;
-      ImGui::ShowDemoWindow(&open);
-
-      rlImGuiEnd();
+      drawPanel();
 
       EndDrawing();
     }
@@ -80,12 +108,48 @@ struct App {
   void update() {
     auto command = textInput.update();
 
+    if (needScriptReload) scriptReload();
+
     if (command.has_value()) {
       Lexer lexer{command.value()};
       Parser parser{lexer.parse()};
       Ast::Program prg = parser.parse();
       prg.execute(&vm);
     }
+  }
+
+  /**
+   * Returns whether any script-available variable has changed.
+   */
+  void drawPanel() {
+    rlImGuiBegin();
+
+    int prevVa{va};
+    int prevVb{vb};
+    int prevVc{vc};
+    int prevVd{vd};
+    int prevVstartx{vstartx};
+    int prevVstarty{vstarty};
+    int prevVstartangle{vstartangle};
+
+    ImGui::Begin("Variables");
+
+    ImGui::SliderInt("va", &va, 0, 500);
+    ImGui::SliderInt("vb", &vb, 0, 500);
+    ImGui::SliderInt("vc", &vc, 0, 500);
+    ImGui::SliderInt("vd", &vd, 0, 500);
+
+    ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
+    ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
+    ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
+
+    ImGui::End();
+
+    rlImGuiEnd();
+
+    needScriptReload = va != prevVa || vb != prevVb || vc != prevVc ||
+                       vd != prevVd || vstartx != prevVstartx ||
+                       vstarty != prevVstarty || vstartangle != prevVstartangle;
   }
 
   void draw() const {
