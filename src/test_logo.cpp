@@ -46,6 +46,8 @@ int main() {
                               {LexemeKind::Number, "10"},
                               {LexemeKind::ParenClose, ""}});
 
+  test_tokens("-5.5", {{LexemeKind::Number, "-5.5"}});
+
   test_tokens("loop(12) { b(10.5) }", {{LexemeKind::Keyword, "loop"},
                                        {LexemeKind::ParenOpen, ""},
                                        {LexemeKind::Number, "12"},
