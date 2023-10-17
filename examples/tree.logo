@@ -1,16 +1,18 @@
-fn branch(size, angle, dec, limit) {
+fn branch(size, angle, thick, dec, limit) {
+    t(thick)
     f(size)
 
     if (size > limit) {
         l(angle)
-        branch(size / dec, angle, dec, limit)
+        branch(size / dec, angle, thick / dec, dec, limit)
         r(angle * 2)
-        branch(size / dec, angle, dec, limit)
+        branch(size / dec, angle, thick / dec, dec, limit)
         l(angle)
     }
 
+    t(thick)
     b(size)
 }
 
 pos(512, 700)
-branch(200, 30, 1.4, 4)
+branch(200, 30, 20, 1.4, 4)

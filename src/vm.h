@@ -24,6 +24,8 @@ struct Frame {
 struct Line {
   Vector2 from;
   Vector2 to;
+  float thickness;
+  Color color;
 };
 
 struct VM {
@@ -31,6 +33,7 @@ struct VM {
   float angle = 0.0f;
   bool isDown = true;
   float thickness = 1.0;
+  Color color = BLACK;
 
   vector<Frame> frames{};
   vector<Line> history{};
@@ -59,7 +62,7 @@ struct VM {
     pos.y += cosf(rad()) * -v;
 
     if (isDown) {
-      history.emplace_back(prevPos, pos);
+      history.emplace_back(prevPos, pos, thickness, color);
     }
   }
 

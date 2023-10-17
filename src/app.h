@@ -87,7 +87,7 @@ struct App {
     DrawTriangle(p1, p2, p3, GREEN);
 
     for (auto &line : vm.history) {
-      DrawLineV(line.from, line.to, BLACK);
+      DrawLineEx(line.from, line.to, line.thickness, line.color);
     }
   }
 };
