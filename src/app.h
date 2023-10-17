@@ -5,9 +5,11 @@
 #include <vector>
 
 #include "config.h"
+#include "imgui.h"
 #include "logo.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "rlImGui.h"
 #include "text_input.h"
 #include "vm.h"
 
@@ -29,6 +31,8 @@ struct App {
 
     InitWindow(config.win_w, config.win_h, "P-Logo");
     SetTargetFPS(24);
+
+    rlImGuiSetup(true);
 
     reset();
   }
@@ -58,8 +62,19 @@ struct App {
 
       draw();
 
+      rlImGuiBegin();
+
+      bool open = true;
+      ImGui::ShowDemoWindow(&open);
+
+      rlImGuiEnd();
+
       EndDrawing();
     }
+
+    rlImGuiShutdown();
+
+    CloseWindow();
   }
 
   void update() {
