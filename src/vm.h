@@ -30,6 +30,7 @@ struct VM {
   Vector2 pos{};
   float angle = 0.0f;
   bool isDown = true;
+  float thickness = 1.0;
 
   vector<Frame> frames{};
   vector<Line> history{};

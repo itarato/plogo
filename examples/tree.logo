@@ -1,0 +1,16 @@
+fn branch(size, angle, dec, limit) {
+    f(size)
+
+    if (size > limit) {
+        l(angle)
+        branch(size / dec, angle, dec, limit)
+        r(angle * 2)
+        branch(size / dec, angle, dec, limit)
+        l(angle)
+    }
+
+    b(size)
+}
+
+pos(512, 700)
+branch(200, 30, 1.4, 4)

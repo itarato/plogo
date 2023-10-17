@@ -1,0 +1,14 @@
+fn poly(sides, size, dec, limit) {
+    loop (sides) {
+        if (size > limit) {
+            poly(sides, size / dec, dec, limit)
+        }
+
+        f(size)
+        r(360 / sides)
+    }
+}
+
+pos(300, 100)
+r(90)
+poly(6, 300, 3, 10)

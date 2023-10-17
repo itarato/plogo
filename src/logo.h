@@ -413,6 +413,10 @@ struct FnCallNode : Node {
       assert(args[1]->value().kind == ExprValueKind::Number);
       vm->setPos(args[0]->value().value.floatVal,
                  args[1]->value().value.floatVal);
+    } else if (fnName == "thickness" || fnName == "thick" || fnName == "t") {
+      assert(args.size() == 1);
+      assert(args[0]->value().kind == ExprValueKind::Number);
+      vm->thickness = args[0]->value().value.floatVal;
     } else {
       if (!vm->functions.contains(fnName)) {
         PANIC("Unrecognized function name: %s", fnName.c_str());
