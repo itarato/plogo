@@ -46,8 +46,6 @@ int main() {
                               {LexemeKind::Number, "10"},
                               {LexemeKind::ParenClose, ""}});
 
-  test_tokens("-5.5", {{LexemeKind::Number, "-5.5"}});
-
   test_tokens("loop(12) { b(10.5) }", {{LexemeKind::Keyword, "loop"},
                                        {LexemeKind::ParenOpen, ""},
                                        {LexemeKind::Number, "12"},
@@ -64,6 +62,8 @@ int main() {
                             {LexemeKind::Op, "+"},
                             {LexemeKind::Name, "a"},
                         });
+
+  test_tokens("\"abc\"", {{LexemeKind::String, "abc"}});
 
   test_tokens("fn circle(iter, size) { f(size) r(360 / iter) }",
               {

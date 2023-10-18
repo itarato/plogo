@@ -20,6 +20,7 @@ const vector<string> keywords{"fn", "if", "else", "loop"};
 enum class LexemeKind {
   Keyword,
   Number,
+  String,
   Name,
   Semicolon,
   BraceOpen,
@@ -64,6 +65,8 @@ struct Lexer {
         lexemes.push_back(readWord());
       } else if (isdigit(c)) {
         lexemes.push_back(readNumber());
+      } else if (c == '"') {
+        lexemes.push_back(readString());
       } else if (c == '(') {
         lexemes.push_back(Lexeme(LexemeKind::ParenOpen));
         next();
@@ -109,6 +112,13 @@ struct Lexer {
     return Lexeme(LexemeKind::Number, word);
   }
 
+  Lexeme readString() {
+    assert(next() == '"');
+    string s = readWhile([](char c) -> bool { return c != '"'; });
+    assert(next() == '"');
+    return Lexeme(LexemeKind::String, s);
+  }
+
   string readWhile(bool (*condFn)(char)) {
     string out{};
 
@@ -132,8 +142,6 @@ struct Lexer {
 namespace Ast {
 
 struct ExprValue;
-ExprValue makeFloatVal(float v);
-ExprValue makeBoolVal(bool v);
 
 /**
 
@@ -165,69 +173,97 @@ struct Program : Node {
 };
 
 enum class ExprValueKind {
+  String,
   Number,
   Boolean,
+  Unknown,
 };
 
 struct ExprValue {
   union {
     float floatVal;
     bool boolVal;
-  } value;
+    string strVal;
+  };
   ExprValueKind kind;
 
-  ExprValue add(ExprValue other) {
+  ExprValue() : floatVal(0.0), kind(ExprValueKind::Unknown) {}
+  ExprValue(float v) : floatVal(v), kind(ExprValueKind::Number) {}
+  ExprValue(bool v) : boolVal(v), kind(ExprValueKind::Boolean) {}
+  ExprValue(string v) : strVal(v), kind(ExprValueKind::String) {}
+
+  ExprValue &operator=(const ExprValue &other) {
+    kind = other.kind;
+    switch (other.kind) {
+      case ExprValueKind::Boolean:
+        boolVal = other.boolVal;
+        break;
+      case ExprValueKind::Number:
+        floatVal = other.floatVal;
+        break;
+      case ExprValueKind::String:
+        strVal = other.strVal;
+        break;
+      default:
+        floatVal = 0.0f;
+        break;
+    };
+
+    return *this;
+  }
+
+  ExprValue(const ExprValue &other) { *this = other; }
+
+  ~ExprValue() {
+    if (kind == ExprValueKind::String) {
+      strVal.~string();
+    }
+  }
+
+  ExprValue add(ExprValue &other) {
     if (!is_same_kind(other, ExprValueKind::Number)) {
       panic("Cannot sum non number values");
     }
 
-    return makeFloatVal(value.floatVal + other.value.floatVal);
+    return ExprValue(floatVal + other.floatVal);
   }
 
-  ExprValue sub(ExprValue other) {
+  ExprValue sub(ExprValue &other) {
     if (!is_same_kind(other, ExprValueKind::Number)) {
       panic("Cannot subtract non number values");
     }
 
-    return makeFloatVal(value.floatVal - other.value.floatVal);
+    return ExprValue(floatVal - other.floatVal);
   }
 
-  ExprValue mul(ExprValue other) {
+  ExprValue mul(ExprValue &other) {
     if (!is_same_kind(other, ExprValueKind::Number)) {
       panic("Cannot multiply non number values");
     }
 
-    return makeFloatVal(value.floatVal * other.value.floatVal);
+    return ExprValue(floatVal * other.floatVal);
   }
 
-  ExprValue div(ExprValue other) {
+  ExprValue div(ExprValue &other) {
     if (!is_same_kind(other, ExprValueKind::Number)) {
       panic("Cannot divide non number values");
     }
 
-    return makeFloatVal(value.floatVal / other.value.floatVal);
+    return ExprValue(floatVal / other.floatVal);
   }
 
-  ExprValue lt(ExprValue other) {
+  ExprValue lt(ExprValue &other) {
     if (!is_same_kind(other, ExprValueKind::Number)) {
       panic("Cannot compare non number values");
     }
 
-    return makeBoolVal(value.floatVal < other.value.floatVal);
+    return ExprValue(floatVal < other.floatVal);
   }
 
-  inline bool is_same_kind(ExprValue other, ExprValueKind assertedKind) {
+  inline bool is_same_kind(ExprValue &other, ExprValueKind assertedKind) {
     return kind == assertedKind && other.kind == assertedKind;
   }
 };
-
-ExprValue makeFloatVal(float v) {
-  return {.value = {.floatVal = v}, .kind = ExprValueKind::Number};
-}
-
-ExprValue makeBoolVal(bool v) {
-  return {.value = {.boolVal = v}, .kind = ExprValueKind::Boolean};
-}
 
 struct Expr : Node {
   virtual ExprValue value() = 0;
@@ -240,7 +276,7 @@ struct FloatExpr : Expr {
   FloatExpr(float v) : v(v) {}
 
   void execute(VM *vm) {}
-  ExprValue value() { return makeFloatVal(v); }
+  ExprValue value() { return ExprValue(v); }
 
   ~FloatExpr() {}
 };
@@ -255,6 +291,17 @@ struct NameExpr : Expr {
   ExprValue value() { return v; }
 
   ~NameExpr() {}
+};
+
+struct StringExpr : Expr {
+  string s;
+
+  StringExpr(string s) : s(s) {}
+
+  void execute(VM *vm) {}
+  ExprValue value() { return ExprValue(s); }
+
+  ~StringExpr() {}
 };
 
 struct BinOpExpr : Expr {
@@ -308,7 +355,7 @@ struct LoopNode : Node {
       panic("Only number can be a loop count");
     }
 
-    unsigned int iter = (unsigned int)count->value().value.floatVal;
+    unsigned int iter = (unsigned int)count->value().floatVal;
     for (unsigned int i = 0; i < iter; i++) {
       for (auto &statement : statements) {
         statement->execute(vm);
@@ -333,7 +380,7 @@ struct IfNode : Node {
     condNode->execute(vm);
     assert(condNode->value().kind == ExprValueKind::Boolean);
 
-    if (condNode->value().value.boolVal) {
+    if (condNode->value().boolVal) {
       for (auto &statement : trueStatements) {
         statement->execute(vm);
       }
@@ -388,19 +435,19 @@ struct FnCallNode : Node {
     if (fnName == "forward" || fnName == "f") {
       assert(args.size() == 1);
       assert(args[0]->value().kind == ExprValueKind::Number);
-      vm->forward(args[0]->value().value.floatVal);
+      vm->forward(args[0]->value().floatVal);
     } else if (fnName == "backward" || fnName == "b") {
       assert(args.size() == 1);
       assert(args[0]->value().kind == ExprValueKind::Number);
-      vm->backward(args[0]->value().value.floatVal);
+      vm->backward(args[0]->value().floatVal);
     } else if (fnName == "left" || fnName == "l") {
       assert(args.size() == 1);
       assert(args[0]->value().kind == ExprValueKind::Number);
-      vm->left(args[0]->value().value.floatVal);
+      vm->left(args[0]->value().floatVal);
     } else if (fnName == "right" || fnName == "r") {
       assert(args.size() == 1);
       assert(args[0]->value().kind == ExprValueKind::Number);
-      vm->right(args[0]->value().value.floatVal);
+      vm->right(args[0]->value().floatVal);
     } else if (fnName == "up" || fnName == "u") {
       assert(args.size() == 0);
       vm->isDown = false;
@@ -411,12 +458,25 @@ struct FnCallNode : Node {
       assert(args.size() == 2);
       assert(args[0]->value().kind == ExprValueKind::Number);
       assert(args[1]->value().kind == ExprValueKind::Number);
-      vm->setPos(args[0]->value().value.floatVal,
-                 args[1]->value().value.floatVal);
+      vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
     } else if (fnName == "thickness" || fnName == "thick" || fnName == "t") {
       assert(args.size() == 1);
       assert(args[0]->value().kind == ExprValueKind::Number);
-      vm->thickness = args[0]->value().value.floatVal;
+      vm->thickness = args[0]->value().floatVal;
+    } else if (fnName == "intvar") {
+      assert(args.size() == 4);
+      assert(args[0]->value().kind == ExprValueKind::String);
+      assert(args[1]->value().kind == ExprValueKind::Number);
+      assert(args[2]->value().kind == ExprValueKind::Number);
+      assert(args[3]->value().kind == ExprValueKind::Number);
+      // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
+      // fully put Logo structs (non ref / non pointer) into VM.
+      string name{args[0]->value().strVal};
+      vm->intVars[name] = IntVar{(int)args[1]->value().floatVal,
+                                 (int)args[2]->value().floatVal};
+      if (!vm->frames.front().variables.contains(name)) {
+        vm->frames.front().variables[name] = args[3]->value();
+      }
     } else {
       if (!vm->functions.contains(fnName)) {
         PANIC("Unrecognized function name: %s", fnName.c_str());
@@ -593,6 +653,10 @@ struct Parser {
         exprList.push_back(parse_expr_number());
       } else if (peek().kind == LexemeKind::Name) {
         exprList.push_back(parse_expr_name());
+      } else if (peek().kind == LexemeKind::String) {
+        exprList.push_back(parse_expr_string());
+      } else {
+        PANIC("Unexpected lexeme kind for expression");
       }
 
       if (peek().kind == LexemeKind::Op) {
@@ -629,6 +693,12 @@ struct Parser {
     Lexeme val = next();
     assert(val.kind == LexemeKind::Name);
     return make_unique<Ast::NameExpr>(val.v);
+  }
+
+  unique_ptr<Ast::Expr> parse_expr_string() {
+    Lexeme val = next();
+    assert(val.kind == LexemeKind::String);
+    return make_unique<Ast::StringExpr>(val.v);
   }
 
   bool isEnd() const { return ptr >= lexemes.size(); }

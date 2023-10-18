@@ -1,4 +1,7 @@
-loop (va) {
-    f(vb)
-    r(360.0 / va)
+intvar("sides", 3, 12, 4)
+intvar("size", 1, 500, 100)
+
+loop (sides) {
+    f(size)
+    r(360.0 / sides)
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 #include <string>
@@ -28,6 +29,11 @@ struct Line {
   Color color;
 };
 
+struct IntVar {
+  int min;
+  int max;
+};
+
 struct VM {
   Vector2 pos{};
   float angle = 0.0f;
@@ -39,15 +45,21 @@ struct VM {
   vector<Line> history{};
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
-  VM() {}
+  unordered_map<string, IntVar> intVars{};
+
+  VM() { frames.emplace_back(); }
 
   void reset() {
-    frames.clear();
-    frames.emplace_back();
+    // Leave base frame.
+    // Risk: base frame is always kept as is - assuming that initialization of a
+    // used variable must happen always. As well this keeps preset variables the
+    // same at a cost of persisting state between resets.
+    while (frames.size() > 1) frames.pop_back();
+    assert(frames.size() == 1);
 
     history.clear();
-
     functions.clear();
+    intVars.clear();
 
     angle = 0.0f;
     isDown = true;

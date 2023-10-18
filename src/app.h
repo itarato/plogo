@@ -58,10 +58,10 @@ struct App {
 
     vm.reset();
 
-    vm.frames.front().variables["va"] = Ast::makeFloatVal((float)va);
-    vm.frames.front().variables["vb"] = Ast::makeFloatVal((float)vb);
-    vm.frames.front().variables["vc"] = Ast::makeFloatVal((float)vc);
-    vm.frames.front().variables["vd"] = Ast::makeFloatVal((float)vd);
+    vm.frames.front().variables["va"] = Ast::ExprValue((float)va);
+    vm.frames.front().variables["vb"] = Ast::ExprValue((float)vb);
+    vm.frames.front().variables["vc"] = Ast::ExprValue((float)vc);
+    vm.frames.front().variables["vd"] = Ast::ExprValue((float)vd);
 
     vm.pos.x = vstartx;
     vm.pos.y = vstarty;
@@ -124,20 +124,19 @@ struct App {
   void drawPanel() {
     rlImGuiBegin();
 
-    int prevVa{va};
-    int prevVb{vb};
-    int prevVc{vc};
-    int prevVd{vd};
+    bool didChange{false};
     int prevVstartx{vstartx};
     int prevVstarty{vstarty};
     int prevVstartangle{vstartangle};
 
     ImGui::Begin("Variables");
 
-    ImGui::SliderInt("va", &va, 0, 500);
-    ImGui::SliderInt("vb", &vb, 0, 500);
-    ImGui::SliderInt("vc", &vc, 0, 500);
-    ImGui::SliderInt("vd", &vd, 0, 500);
+    for (auto &[k, v] : vm.intVars) {
+      bool changed = ImGui::SliderFloat(
+          k.c_str(), &(vm.frames.front().variables[k].floatVal), v.min, v.max);
+
+      didChange = didChange || changed;
+    }
 
     ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
     ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
@@ -147,8 +146,7 @@ struct App {
 
     rlImGuiEnd();
 
-    needScriptReload = va != prevVa || vb != prevVb || vc != prevVc ||
-                       vd != prevVd || vstartx != prevVstartx ||
+    needScriptReload = didChange || vstartx != prevVstartx ||
                        vstarty != prevVstarty || vstartangle != prevVstartangle;
   }
 
