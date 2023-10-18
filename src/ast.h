@@ -18,14 +18,15 @@ using namespace std;
 
 namespace Ast {
 
-struct ExprValue;
-
-/**
+/** Grammar:
 
 prog      = *statements
-statement = fncall
+statement = fncall | if | fndef
 fncall    = name popen args pclose
-args      = *expr comma
+if        = if popen expr pclose bopen statement* bclose [else bopen statement*
+bclose]
+fndef     = fn name popen args pclose bopen statement* bclose
+args      = expr comma
 
 **/
 
