@@ -59,4 +59,4 @@ triangle(600, 10)
 
 Variable control UI can be obtained with `intvar`, eg: `intvar("size", 0, 200, 50)`.
 
-![Tree example](./misc/frac_tree.png)
+![Tree example](./misc/frac_tree_vars.png)
