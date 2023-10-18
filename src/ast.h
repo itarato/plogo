@@ -249,6 +249,15 @@ struct FnCallNode : Node {
       assert(args.size() == 1);
       assert(args[0]->value().kind == ValueKind::Number);
       vm->thickness = args[0]->value().floatVal;
+    } else if (fnName == "rand") {
+      // TODO Until we make fncalls an expression - we host the variable in the
+      // fn call arglist.
+      assert(args.size() == 3);
+      assert(args[0]->value().kind == ValueKind::String);
+      assert(args[1]->value().kind == ValueKind::Number);
+      assert(args[2]->value().kind == ValueKind::Number);
+      vm->frames.back().variables[args[0]->value().strVal] =
+          randf((int)args[1]->value().floatVal, (int)args[2]->value().floatVal);
     } else if (fnName == "intvar") {
       assert(args.size() == 4);
       assert(args[0]->value().kind == ValueKind::String);

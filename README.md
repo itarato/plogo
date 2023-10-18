@@ -8,26 +8,30 @@
 ## Commands
 
 ```
-pos(<X>, <Y>)
+pos(<val>, <val>)
 
-forward(<V>)
-backward(<V>)
+forward(<length>)
+backward(<length>)
 
-left(<V>)
-right(<V>)
+left(<angle>)
+right(<angle>)
 
-loop (<I>) {
+loop (<number>) {
 }
 
-if (<C>) {
+if (<cond>) {
 }
 
-if (<C>) {
+if (<cond>) {
 } else {
 }
 
-fn <N>(<A1>, <A2>, ..) {
+fn <name>(<arg1>, <arg2>, ..) {
 }
+
+rand(<varname>, <min>, <max>)
+
+intvar(<varname>, <min>, <max>, <default>)
 ```
 
 ## Example
@@ -53,19 +57,6 @@ triangle(600, 10)
 
 ## Variables
 
-Available variables to toggle (through the debug panel):
-
-```
-// Int values (0-500)
-va
-vb
-vc
-vd
-
-// Start position
-vstartx
-vstarty
-vstartangle
-```
+Variable control UI can be obtained with `intvar`, eg: `intvar("size", 0, 200, 50)`.
 
 ![Tree example](./misc/frac_tree.png)

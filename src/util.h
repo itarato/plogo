@@ -65,3 +65,6 @@ void panic(string msg) {
 bool eqf(float a, float b, float epsilon = 0.005f) {
   return (fabs(a - b) < epsilon);
 }
+
+float randf() { return (float)(rand() & 0xFFFF) / 0xFFFF; }
+float randf(float min, float max) { return randf() * (max - min) + min; }
