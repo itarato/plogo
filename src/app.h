@@ -16,14 +16,11 @@
 
 using namespace std;
 
+#define INTVARLIMIT 32
+
 struct App {
   TextInput textInput{};
   VM vm{};
-
-  int va{50};
-  int vb{50};
-  int vc{50};
-  int vd{50};
 
   int vstartx{0};
   int vstarty{0};
@@ -58,11 +55,6 @@ struct App {
     if (sourceFileName == nullptr) return;
 
     vm.reset();
-
-    vm.frames.front().variables["va"] = Value((float)va);
-    vm.frames.front().variables["vb"] = Value((float)vb);
-    vm.frames.front().variables["vc"] = Value((float)vc);
-    vm.frames.front().variables["vd"] = Value((float)vd);
 
     vm.pos.x = vstartx;
     vm.pos.y = vstarty;
@@ -132,11 +124,22 @@ struct App {
 
     ImGui::Begin("Variables");
 
-    for (auto &[k, v] : vm.intVars) {
-      bool changed = ImGui::SliderFloat(
-          k.c_str(), &(vm.frames.front().variables[k].floatVal), v.min, v.max);
+    int intVarBackend[INTVARLIMIT];
+    assert(vm.intVars.size() < INTVARLIMIT);
 
-      didChange = didChange || changed;
+    int i = 0;
+    for (auto &[k, v] : vm.intVars) {
+      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+
+      bool changed =
+          ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
+
+      if (changed) {
+        didChange = true;
+        vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+      }
+
+      i++;
     }
 
     ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
