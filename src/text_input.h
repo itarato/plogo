@@ -46,6 +46,9 @@ struct TextInput {
           case KEY_RIGHT_BRACKET:
             newChar = '}';
             break;
+          case KEY_APOSTROPHE:
+            newChar = '\"';
+            break;
           default:
             newChar = char(keyCode);
             break;
