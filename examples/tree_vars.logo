@@ -4,9 +4,9 @@ fn branch(size, angle, thick, dec, limit) {
 
     if (size > limit) {
         l(angle)
-        branch(size / dec, angle, thick / dec, dec, limit)
+        branch(size * dec, angle, thick / 1.5, dec, limit)
         r(angle * 2)
-        branch(size / dec, angle, thick / dec, dec, limit)
+        branch(size * dec, angle, thick / 1.5, dec, limit)
         l(angle)
     }
 
@@ -14,4 +14,12 @@ fn branch(size, angle, thick, dec, limit) {
     b(size)
 }
 
-branch(va, vb, vc, 100 / vd, 4)
+intvar("size", 10, 300, 100)
+intvar("angle", 5, 120, 30)
+intvar("shrink", 1, 8, 5)
+intvar("angles", 1, 6, 1)
+
+loop (angles) {
+    branch(size, angle, 16, shrink / 10, 5)
+    r(360 / angles)
+}

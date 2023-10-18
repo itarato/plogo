@@ -111,9 +111,6 @@ struct App {
     }
   }
 
-  /**
-   * Returns whether any script-available variable has changed.
-   */
   void drawPanel() {
     rlImGuiBegin();
 
