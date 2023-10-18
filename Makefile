@@ -20,7 +20,7 @@ plogo: $(OBJ)
 
 test: $(TESTOBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
-	
+
 %.o:%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
@@ -29,7 +29,8 @@ clean:
 	rm -f ./plogo
 
 cleandeep:
-	rm -f ./src/*.o
+	rm -f ./test
 	rm -f ./plogo
+	rm -f ./src/*.o
 	rm -f ./lib/imgui/*.o
 	rm -f ./lib/rlImGui/*.o
