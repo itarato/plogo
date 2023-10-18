@@ -9,17 +9,16 @@
 
 #include "ast.h"
 #include "raylib.h"
+#include "value.h"
 
 using namespace std;
 
 namespace Ast {
-struct Node;
 struct ExecutableFnNode;
-struct ExprValue;
 }  // namespace Ast
 
 struct Frame {
-  unordered_map<string, Ast::ExprValue> variables{};
+  unordered_map<string, Value> variables{};
 };
 
 struct Line {

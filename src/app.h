@@ -59,10 +59,10 @@ struct App {
 
     vm.reset();
 
-    vm.frames.front().variables["va"] = Ast::ExprValue((float)va);
-    vm.frames.front().variables["vb"] = Ast::ExprValue((float)vb);
-    vm.frames.front().variables["vc"] = Ast::ExprValue((float)vc);
-    vm.frames.front().variables["vd"] = Ast::ExprValue((float)vd);
+    vm.frames.front().variables["va"] = Value((float)va);
+    vm.frames.front().variables["vb"] = Value((float)vb);
+    vm.frames.front().variables["vc"] = Value((float)vc);
+    vm.frames.front().variables["vd"] = Value((float)vd);
 
     vm.pos.x = vstartx;
     vm.pos.y = vstarty;

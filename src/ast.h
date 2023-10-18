@@ -12,6 +12,7 @@
 
 #include "lexer.h"
 #include "util.h"
+#include "value.h"
 #include "vm.h"
 
 using namespace std;
@@ -50,101 +51,8 @@ struct Program : Node {
   ~Program() {}
 };
 
-enum class ExprValueKind {
-  String,
-  Number,
-  Boolean,
-  Unknown,
-};
-
-struct ExprValue {
-  union {
-    float floatVal;
-    bool boolVal;
-    string strVal;
-  };
-  ExprValueKind kind;
-
-  ExprValue() : floatVal(0.0), kind(ExprValueKind::Unknown) {}
-  ExprValue(float v) : floatVal(v), kind(ExprValueKind::Number) {}
-  ExprValue(bool v) : boolVal(v), kind(ExprValueKind::Boolean) {}
-  ExprValue(string v) : strVal(v), kind(ExprValueKind::String) {}
-
-  ExprValue &operator=(const ExprValue &other) {
-    kind = other.kind;
-    switch (other.kind) {
-      case ExprValueKind::Boolean:
-        boolVal = other.boolVal;
-        break;
-      case ExprValueKind::Number:
-        floatVal = other.floatVal;
-        break;
-      case ExprValueKind::String:
-        strVal = other.strVal;
-        break;
-      default:
-        floatVal = 0.0f;
-        break;
-    };
-
-    return *this;
-  }
-
-  ExprValue(const ExprValue &other) { *this = other; }
-
-  ~ExprValue() {
-    if (kind == ExprValueKind::String) {
-      strVal.~string();
-    }
-  }
-
-  ExprValue add(ExprValue &other) {
-    if (!is_same_kind(other, ExprValueKind::Number)) {
-      panic("Cannot sum non number values");
-    }
-
-    return ExprValue(floatVal + other.floatVal);
-  }
-
-  ExprValue sub(ExprValue &other) {
-    if (!is_same_kind(other, ExprValueKind::Number)) {
-      panic("Cannot subtract non number values");
-    }
-
-    return ExprValue(floatVal - other.floatVal);
-  }
-
-  ExprValue mul(ExprValue &other) {
-    if (!is_same_kind(other, ExprValueKind::Number)) {
-      panic("Cannot multiply non number values");
-    }
-
-    return ExprValue(floatVal * other.floatVal);
-  }
-
-  ExprValue div(ExprValue &other) {
-    if (!is_same_kind(other, ExprValueKind::Number)) {
-      panic("Cannot divide non number values");
-    }
-
-    return ExprValue(floatVal / other.floatVal);
-  }
-
-  ExprValue lt(ExprValue &other) {
-    if (!is_same_kind(other, ExprValueKind::Number)) {
-      panic("Cannot compare non number values");
-    }
-
-    return ExprValue(floatVal < other.floatVal);
-  }
-
-  inline bool is_same_kind(ExprValue &other, ExprValueKind assertedKind) {
-    return kind == assertedKind && other.kind == assertedKind;
-  }
-};
-
 struct Expr : Node {
-  virtual ExprValue value() = 0;
+  virtual Value value() = 0;
   virtual ~Expr() {}
 };
 
@@ -154,19 +62,19 @@ struct FloatExpr : Expr {
   FloatExpr(float v) : v(v) {}
 
   void execute(VM *vm) {}
-  ExprValue value() { return ExprValue(v); }
+  Value value() { return Value(v); }
 
   ~FloatExpr() {}
 };
 
 struct NameExpr : Expr {
-  ExprValue v;
+  Value v;
   string name;
 
   NameExpr(string name) : name(name) {}
 
   void execute(VM *vm) { v = vm->frames.back().variables[name]; }
-  ExprValue value() { return v; }
+  Value value() { return v; }
 
   ~NameExpr() {}
 };
@@ -177,7 +85,7 @@ struct StringExpr : Expr {
   StringExpr(string s) : s(s) {}
 
   void execute(VM *vm) {}
-  ExprValue value() { return ExprValue(s); }
+  Value value() { return Value(s); }
 
   ~StringExpr() {}
 };
@@ -186,7 +94,7 @@ struct BinOpExpr : Expr {
   string op;
   unique_ptr<Expr> lhs;
   unique_ptr<Expr> rhs;
-  ExprValue v;
+  Value v;
 
   BinOpExpr(string op, unique_ptr<Expr> lhs, unique_ptr<Expr> rhs)
       : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
@@ -196,8 +104,8 @@ struct BinOpExpr : Expr {
   void execute(VM *vm) {
     lhs->execute(vm);
     rhs->execute(vm);
-    ExprValue lhsVal = lhs->value();
-    ExprValue rhsVal = rhs->value();
+    Value lhsVal = lhs->value();
+    Value rhsVal = rhs->value();
 
     if (op == "+") {
       v = lhsVal.add(rhsVal);
@@ -215,7 +123,7 @@ struct BinOpExpr : Expr {
       PANIC("Unknown op: %s", op.c_str());
     }
   }
-  ExprValue value() { return v; }
+  Value value() { return v; }
 };
 
 struct LoopNode : Node {
@@ -229,7 +137,7 @@ struct LoopNode : Node {
   void execute(VM *vm) {
     count->execute(vm);
 
-    if (count->value().kind != ExprValueKind::Number) {
+    if (count->value().kind != ValueKind::Number) {
       panic("Only number can be a loop count");
     }
 
@@ -256,7 +164,7 @@ struct IfNode : Node {
 
   void execute(VM *vm) {
     condNode->execute(vm);
-    assert(condNode->value().kind == ExprValueKind::Boolean);
+    assert(condNode->value().kind == ValueKind::Boolean);
 
     if (condNode->value().boolVal) {
       for (auto &statement : trueStatements) {
@@ -312,19 +220,19 @@ struct FnCallNode : Node {
 
     if (fnName == "forward" || fnName == "f") {
       assert(args.size() == 1);
-      assert(args[0]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::Number);
       vm->forward(args[0]->value().floatVal);
     } else if (fnName == "backward" || fnName == "b") {
       assert(args.size() == 1);
-      assert(args[0]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::Number);
       vm->backward(args[0]->value().floatVal);
     } else if (fnName == "left" || fnName == "l") {
       assert(args.size() == 1);
-      assert(args[0]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::Number);
       vm->left(args[0]->value().floatVal);
     } else if (fnName == "right" || fnName == "r") {
       assert(args.size() == 1);
-      assert(args[0]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::Number);
       vm->right(args[0]->value().floatVal);
     } else if (fnName == "up" || fnName == "u") {
       assert(args.size() == 0);
@@ -334,19 +242,19 @@ struct FnCallNode : Node {
       vm->isDown = true;
     } else if (fnName == "pos" || fnName == "p") {
       assert(args.size() == 2);
-      assert(args[0]->value().kind == ExprValueKind::Number);
-      assert(args[1]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::Number);
+      assert(args[1]->value().kind == ValueKind::Number);
       vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
     } else if (fnName == "thickness" || fnName == "thick" || fnName == "t") {
       assert(args.size() == 1);
-      assert(args[0]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::Number);
       vm->thickness = args[0]->value().floatVal;
     } else if (fnName == "intvar") {
       assert(args.size() == 4);
-      assert(args[0]->value().kind == ExprValueKind::String);
-      assert(args[1]->value().kind == ExprValueKind::Number);
-      assert(args[2]->value().kind == ExprValueKind::Number);
-      assert(args[3]->value().kind == ExprValueKind::Number);
+      assert(args[0]->value().kind == ValueKind::String);
+      assert(args[1]->value().kind == ValueKind::Number);
+      assert(args[2]->value().kind == ValueKind::Number);
+      assert(args[3]->value().kind == ValueKind::Number);
       // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
       // fully put Logo structs (non ref / non pointer) into VM.
       string name{args[0]->value().strVal};
