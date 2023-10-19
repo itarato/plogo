@@ -101,10 +101,16 @@ struct App {
   }
 
   void update() {
-    auto command = textInput.update();
+    if (IsMouseButtonPressed(1)) {
+      vstartx = GetMousePosition().x;
+      vstarty = GetMousePosition().y;
+      vm.setPos(GetMousePosition().x, GetMousePosition().y);
+      needScriptReload = true;
+    }
 
     if (needScriptReload) scriptReload();
 
+    auto command = textInput.update();
     if (command.has_value()) {
       try {
         runLogo(command.value(), &vm);
@@ -156,6 +162,9 @@ struct App {
 
   void draw() const {
     DrawFPS(GetScreenWidth() - 100, 4);
+    DrawText(TextFormat("Line count: %d", vm.history.size()),
+             GetScreenWidth() - 100, 28, 10, BLACK);
+
     textInput.draw();
 
     // Draw turtle (triangle).
