@@ -293,7 +293,8 @@ struct FnCallNode : Node {
 
       auto fn = vm->functions[fnName];
 
-      assert(args.size() == fn->argNames.size());
+      assert_or_throw(args.size() == fn->argNames.size(),
+                      "FN arg count mismatch");
 
       Frame newFrame{};
 
