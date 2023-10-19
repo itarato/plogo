@@ -32,11 +32,6 @@ struct Lexeme {
   Lexeme(LexemeKind kind, string v) : kind(kind), v(v) {}
 };
 
-void assert_lexeme(Lexeme lexeme, LexemeKind kind, string v) {
-  assert(lexeme.kind == kind);
-  assert(lexeme.v == v);
-}
-
 struct Lexer {
   string code;
   size_t ptr = 0;
