@@ -11,8 +11,7 @@
 #define PASS(...) log("\x1b[92mPASS\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define INFO(...) log("\x1b[90mINFO\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 
-#define PANIC(...) \
-  panic("\x1b[91mPANIC\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
+#define THROW(...) throw_runtime_error(__VA_ARGS__)
 
 #define ASSERT(exp, msg) (exp ? PASS(msg) : FAIL(msg))
 
@@ -31,16 +30,16 @@ void log(const char* level, const char* fileName, int lineNo, const char* s,
   va_end(args);
 }
 
-void panic(const char* level, const char* fileName, int lineNo, const char* s,
-           ...) {
+void throw_runtime_error(const char* s, ...) {
   va_list args;
   va_start(args, s);
 
-  log(level, fileName, lineNo, s, args);
+  char msgbuf[128];
+  sprintf(msgbuf, s, args);
 
   va_end(args);
 
-  exit(EXIT_FAILURE);
+  throw runtime_error(msgbuf);
 }
 
 using namespace std;
@@ -55,11 +54,6 @@ inline T toRange(T v, T vmin, T vmax) {
   v = min(v, vmax);
   v = max(v, vmin);
   return v;
-}
-
-void panic(string msg) {
-  printf("ERROR: %s", msg.c_str());
-  exit(EXIT_FAILURE);
 }
 
 bool eqf(float a, float b, float epsilon = 0.005f) {

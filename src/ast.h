@@ -120,7 +120,7 @@ struct BinOpExpr : Expr {
     } else if (op == ">") {
       v = rhsVal.lt(lhsVal);
     } else {
-      PANIC("Unknown op: %s", op.c_str());
+      THROW("Unknown op: %s", op.c_str());
     }
   }
   Value value() { return v; }
@@ -138,7 +138,7 @@ struct LoopNode : Node {
     count->execute(vm);
 
     if (count->value().kind != ValueKind::Number) {
-      panic("Only number can be a loop count");
+      THROW("Only number can be a loop count");
     }
 
     unsigned int iter = (unsigned int)count->value().floatVal;
@@ -274,7 +274,7 @@ struct FnCallNode : Node {
       }
     } else {
       if (!vm->functions.contains(fnName)) {
-        PANIC("Unrecognized function name: %s", fnName.c_str());
+        THROW("Unrecognized function name: %s", fnName.c_str());
       }
 
       auto fn = vm->functions[fnName];

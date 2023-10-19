@@ -76,7 +76,7 @@ struct Lexer {
         lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
         next();
       } else {
-        PANIC("Unknown character in lexing: %c", c);
+        THROW("Unknown character in lexing: %c", c);
       }
     }
 

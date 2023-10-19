@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <string>
 
 #include "util.h"
@@ -53,27 +54,37 @@ struct Value {
   }
 
   Value add(Value &other) {
-    if (!is_same_kind(other, ValueKind::Number)) PANIC("'add' on non numbers");
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'add' on non numbers");
+    }
     return Value(floatVal + other.floatVal);
   }
 
   Value sub(Value &other) {
-    if (!is_same_kind(other, ValueKind::Number)) PANIC("'sub' on non numbers");
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'sub' on non numbers");
+    }
     return Value(floatVal - other.floatVal);
   }
 
   Value mul(Value &other) {
-    if (!is_same_kind(other, ValueKind::Number)) PANIC("'mul' on non numbers");
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'mul' on non numbers");
+    }
     return Value(floatVal * other.floatVal);
   }
 
   Value div(Value &other) {
-    if (!is_same_kind(other, ValueKind::Number)) PANIC("'div' on non numbers");
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'div' on non numbers");
+    }
     return Value(floatVal / other.floatVal);
   }
 
   Value lt(Value &other) {
-    if (!is_same_kind(other, ValueKind::Number)) PANIC("'lt 'on non numbers");
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'lt 'on non numbers");
+    }
     return Value(floatVal < other.floatVal);
   }
 
