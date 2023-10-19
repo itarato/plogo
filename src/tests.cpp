@@ -2,7 +2,10 @@
 #include <utility>
 
 #include "ast.h"
+#include "lexer.h"
+#include "parser.h"
 #include "util.h"
+#include "value.h"
 #include "vm.h"
 
 using namespace std;
