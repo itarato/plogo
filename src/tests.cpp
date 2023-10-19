@@ -8,6 +8,25 @@
 #include "value.h"
 #include "vm.h"
 
+#define FAIL(...) \
+  log_and_fail("\x1b[91mFAIL\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
+#define PASS(...) log("\x1b[92mPASS\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
+#define ASSERT(exp, msg) (exp ? PASS(msg) : FAIL(msg))
+
+static int failCount = 0;
+
+void log_and_fail(const char* level, const char* fileName, int lineNo,
+                  const char* s, ...) {
+  va_list args;
+  va_start(args, s);
+
+  log_va_list(level, fileName, lineNo, s, args);
+
+  va_end(args);
+
+  failCount++;
+}
+
 using namespace std;
 
 void test_tokens(string code, vector<pair<LexemeKind, string>> expected) {
@@ -39,6 +58,27 @@ void test_vm(string code, void (*testFn)(VM*)) {
   prg.execute(&vm);
 
   testFn(&vm);
+}
+
+void test_vm_raise(string code) {
+  bool gotRaise{false};
+
+  try {
+    Lexer lexer{code};
+    Parser parser{lexer.parse()};
+    Ast::Program prg = parser.parse();
+    VM vm{};
+    prg.execute(&vm);
+  } catch (runtime_error& e) {
+    gotRaise = true;
+    PASS("Code: \"%s\" raised the expected exception", code.c_str());
+  } catch (...) {
+    FAIL("Code: \"%s\" did not raise the expected exception", code.c_str());
+  }
+
+  if (!gotRaise) {
+    FAIL("Code: \"%s\" did not raise the expected exception", code.c_str());
+  }
 }
 
 int main() {
@@ -121,5 +161,17 @@ int main() {
   test_vm("if (1.5 > 3.0) { f(10) } else { f(20) }",
           [](VM* vm) { ASSERT(eqf(vm->pos.y, -20.0), "y is -20.0"); });
 
-  PASS("all");
+  // Error scenarios:
+  test_vm_raise("forward");
+  test_vm_raise("forward()");
+  test_vm_raise("forward(\"fsd\")");
+  test_vm_raise("forward(1, 2)");
+  test_vm_raise("forward(1 < 2)");
+  test_vm_raise("forward(2 + \"few\")");
+
+  if (failCount == 0) {
+    PASS("all");
+  } else {
+    FAIL("%d failed", failCount);
+  }
 }
