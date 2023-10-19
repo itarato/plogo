@@ -1,6 +1,6 @@
 fn line(size, limit, angle) {
     if (size > limit) {
-        zigzag(size / 3, limit, angle)
+        zigzag(size / 4, limit, angle)
     } else {
         f(size)
     }
@@ -13,13 +13,17 @@ fn zigzag(size, limit, angle) {
     r(angle)
     line(size, limit, angle)
     r(angle)
+    line(size * 2, limit, angle)
+    l(angle)
     line(size, limit, angle)
     l(angle)
     line(size, limit, angle)
+    r(angle)
+    line(size, limit, angle)
 }
 
-intvar("size", 10, 300, 100)
-intvar("limit", 5, 20, 10)
+intvar("size", 10, 600, 100)
+intvar("limit", 3, 100, 100)
 intvar("angle", 0, 180, 90)
 
 zigzag(size, limit, angle)
