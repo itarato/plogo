@@ -3,7 +3,6 @@
 #include <bits/stdc++.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cctype>
 #include <iostream>
 #include <memory>
@@ -164,7 +163,8 @@ struct IfNode : Node {
 
   void execute(VM *vm) {
     condNode->execute(vm);
-    assert(condNode->value().kind == ValueKind::Boolean);
+    assert_or_throw(condNode->value().kind == ValueKind::Boolean,
+                    "Not bool for IF condition");
 
     if (condNode->value().boolVal) {
       for (auto &statement : trueStatements) {
@@ -219,51 +219,65 @@ struct FnCallNode : Node {
     for (auto &arg : args) arg->execute(vm);
 
     if (fnName == "forward" || fnName == "f") {
-      assert(args.size() == 1);
-      assert(args[0]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 1, "Expected FN");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "FORWARD expects a number arg");
       vm->forward(args[0]->value().floatVal);
     } else if (fnName == "backward" || fnName == "b") {
-      assert(args.size() == 1);
-      assert(args[0]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 1, "Expected 1 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "BACKWARD expects a number arg");
       vm->backward(args[0]->value().floatVal);
     } else if (fnName == "left" || fnName == "l") {
-      assert(args.size() == 1);
-      assert(args[0]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 1, "Expected 1 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "LEFT expects a number arg");
       vm->left(args[0]->value().floatVal);
     } else if (fnName == "right" || fnName == "r") {
-      assert(args.size() == 1);
-      assert(args[0]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 1, "Expected 1 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "RIGHT expects a number arg");
       vm->right(args[0]->value().floatVal);
     } else if (fnName == "up" || fnName == "u") {
-      assert(args.size() == 0);
+      assert_or_throw(args.size() == 0, "Expected 0 args");
       vm->isDown = false;
     } else if (fnName == "down" || fnName == "d") {
-      assert(args.size() == 0);
+      assert_or_throw(args.size() == 0, "Expected 0 args");
       vm->isDown = true;
     } else if (fnName == "pos" || fnName == "p") {
-      assert(args.size() == 2);
-      assert(args[0]->value().kind == ValueKind::Number);
-      assert(args[1]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 2, "Expected 2 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "POS expects number args");
+      assert_or_throw(args[1]->value().kind == ValueKind::Number,
+                      "POS expects number args");
       vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
     } else if (fnName == "thickness" || fnName == "thick" || fnName == "t") {
-      assert(args.size() == 1);
-      assert(args[0]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 1, "Expected 1 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "THICKNESS expects a number arg");
       vm->thickness = args[0]->value().floatVal;
     } else if (fnName == "rand") {
       // TODO Until we make fncalls an expression - we host the variable in the
       // fn call arglist.
-      assert(args.size() == 3);
-      assert(args[0]->value().kind == ValueKind::String);
-      assert(args[1]->value().kind == ValueKind::Number);
-      assert(args[2]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 3, "Expected 3 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::String,
+                      "RAND expects a string arg");
+      assert_or_throw(args[1]->value().kind == ValueKind::Number,
+                      "RAND expects a number arg");
+      assert_or_throw(args[2]->value().kind == ValueKind::Number,
+                      "RAND expects a number arg");
       vm->frames.back().variables[args[0]->value().strVal] =
           randf((int)args[1]->value().floatVal, (int)args[2]->value().floatVal);
     } else if (fnName == "intvar") {
-      assert(args.size() == 4);
-      assert(args[0]->value().kind == ValueKind::String);
-      assert(args[1]->value().kind == ValueKind::Number);
-      assert(args[2]->value().kind == ValueKind::Number);
-      assert(args[3]->value().kind == ValueKind::Number);
+      assert_or_throw(args.size() == 4, "Expected 4 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::String,
+                      "intvar expects a string arg");
+      assert_or_throw(args[1]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[2]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[3]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
       // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
       // fully put Logo structs (non ref / non pointer) into VM.
       string name{args[0]->value().strVal};

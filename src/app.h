@@ -7,6 +7,7 @@
 #include "ast.h"
 #include "config.h"
 #include "imgui.h"
+#include "logo.h"
 #include "parser.h"
 #include "raylib.h"
 #include "raymath.h"
@@ -63,10 +64,11 @@ struct App {
     std::string fileContent;
     std::getline(std::ifstream(sourceFileName), fileContent, '\0');
 
-    Lexer lexer{fileContent};
-    Parser parser{lexer.parse()};
-    Ast::Program prg = parser.parse();
-    prg.execute(&vm);
+    try {
+      runLogo(fileContent, &vm);
+    } catch (runtime_error &e) {
+      WARN("Compile error: %s", e.what());
+    }
 
     needScriptReload = false;
   }
@@ -104,10 +106,11 @@ struct App {
     if (needScriptReload) scriptReload();
 
     if (command.has_value()) {
-      Lexer lexer{command.value()};
-      Parser parser{lexer.parse()};
-      Ast::Program prg = parser.parse();
-      prg.execute(&vm);
+      try {
+        runLogo(command.value(), &vm);
+      } catch (runtime_error &e) {
+        WARN("Compile error: %s", e.what());
+      }
     }
   }
 

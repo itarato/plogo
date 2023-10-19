@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -100,9 +100,9 @@ struct Lexer {
   }
 
   Lexeme readString() {
-    assert(next() == '"');
+    assert_or_throw(next() == '"', "Expected opening double quote");
     string s = readWhile([](char c) -> bool { return c != '"'; });
-    assert(next() == '"');
+    assert_or_throw(next() == '"', "Expected closing double quote");
     return Lexeme(LexemeKind::String, s);
   }
 
@@ -117,9 +117,24 @@ struct Lexer {
   }
 
   bool isEnd() const { return ptr >= code.size(); }
-  char peek() const { return code.at(ptr); }
-  char peek(unsigned int n) const { return code.at(ptr + n); }
-  char next() { return code.at(ptr++); }
+  char peek() const {
+    if (isEnd()) {
+      throw runtime_error("EOF when asking peek in lexer");
+    }
+    return code.at(ptr);
+  }
+  char peek(unsigned int n) const {
+    if (isEnd()) {
+      throw runtime_error("EOF when asking peek-n in lexer");
+    }
+    return code.at(ptr + n);
+  }
+  char next() {
+    if (isEnd()) {
+      throw runtime_error("EOF when asking next char in lexer");
+    }
+    return code.at(ptr++);
+  }
 
   void consumeSpaces() {
     readWhile([](char c) -> bool { return isspace(c); });

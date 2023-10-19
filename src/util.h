@@ -10,6 +10,7 @@
 #define FAIL(...) log("\x1b[91mFAIL\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define PASS(...) log("\x1b[92mPASS\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define INFO(...) log("\x1b[90mINFO\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
+#define WARN(...) log("\x1b[93mWARN\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 
 #define THROW(...) throw_runtime_error(__VA_ARGS__)
 
@@ -62,3 +63,7 @@ bool eqf(float a, float b, float epsilon = 0.005f) {
 
 float randf() { return (float)(rand() & 0xFFFF) / 0xFFFF; }
 float randf(float min, float max) { return randf() * (max - min) + min; }
+
+inline void assert_or_throw(bool cond, string msg) {
+  if (!cond) throw runtime_error(msg);
+}

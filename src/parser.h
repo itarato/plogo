@@ -23,10 +23,6 @@ void assert_lexeme(Lexeme lexeme, LexemeKind kind, string v) {
   }
 }
 
-inline void assert_or_throw(bool cond, string msg) {
-  if (!cond) throw runtime_error(msg);
-}
-
 struct Parser {
   vector<Lexeme> lexemes;
   size_t ptr = 0;
@@ -53,8 +49,6 @@ struct Parser {
     } else {
       return parse_fncall();
     }
-
-    throw runtime_error("Unknown lexeme");
   }
 
   unique_ptr<Ast::IfNode> parse_if() {
@@ -228,6 +222,16 @@ struct Parser {
   }
 
   bool isEnd() const { return ptr >= lexemes.size(); }
-  Lexeme peek() const { return lexemes.at(ptr); }
-  Lexeme next() { return lexemes.at(ptr++); }
+  Lexeme peek() const {
+    if (isEnd()) {
+      throw runtime_error("EOF when peeking lexeme");
+    }
+    return lexemes.at(ptr);
+  }
+  Lexeme next() {
+    if (isEnd()) {
+      throw runtime_error("EOF when asking next lexeme");
+    }
+    return lexemes.at(ptr++);
+  }
 };
