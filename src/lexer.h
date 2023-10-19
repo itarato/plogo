@@ -22,6 +22,7 @@ enum class LexemeKind {
   ParenClose,
   Comma,
   Op,
+  Assignment,
 };
 
 struct Lexeme {
@@ -74,6 +75,9 @@ struct Lexer {
                  c == '>') {
         string opStr{c};
         lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
+        next();
+      } else if (c == '=') {
+        lexemes.push_back(Lexeme(LexemeKind::Assignment));
         next();
       } else {
         THROW("Unknown character in lexing: %c", c);

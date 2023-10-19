@@ -11,7 +11,7 @@ enum class ValueKind {
   String,
   Number,
   Boolean,
-  Unknown,
+  Undefined,
 };
 
 struct Value {
@@ -22,7 +22,7 @@ struct Value {
   };
   ValueKind kind;
 
-  Value() : floatVal(0.0), kind(ValueKind::Unknown) {}
+  Value() : floatVal(0.0), kind(ValueKind::Undefined) {}
   Value(float v) : floatVal(v), kind(ValueKind::Number) {}
   Value(bool v) : boolVal(v), kind(ValueKind::Boolean) {}
   Value(string v) : strVal(v), kind(ValueKind::String) {}

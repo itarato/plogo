@@ -128,6 +128,10 @@ int main() {
                            {LexemeKind::Number, "1"},
                        });
 
+  test_tokens("a = 1", {{LexemeKind::Name, "a"},
+                        {LexemeKind::Assignment, ""},
+                        {LexemeKind::Number, "1"}});
+
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");
     ASSERT(eqf(vm->pos.x, 0.0), "x is 0.0");
@@ -160,6 +164,9 @@ int main() {
 
   test_vm("if (1.5 > 3.0) { f(10) } else { f(20) }",
           [](VM* vm) { ASSERT(eqf(vm->pos.y, -20.0), "y is -20.0"); });
+
+  test_vm("a = 123 f(a)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -123.0), "y is -123.0"); });
 
   // Error scenarios:
   test_vm_raise("forward");

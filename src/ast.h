@@ -20,13 +20,16 @@ namespace Ast {
 
 /** Grammar:
 
-prog      = *statements
-statement = fncall | if | fndef
-fncall    = name popen args pclose
-if        = if popen expr pclose bopen statement* bclose [else bopen statement*
+prog       = *statements
+statement  = fncall | if | fndef | assignment
+fncall     = name popen args pclose
+if         = if popen expr pclose bopen statement* bclose [else bopen statement*
 bclose]
-fndef     = fn name popen args pclose bopen statement* bclose
-args      = expr comma
+fndef      = fn name popen args pclose bopen statement* bclose
+assignment = name assign expr
+args       = expr comma
+expr       = number | name | binop
+binop      = number op binop | name op binop
 
 **/
 
@@ -123,6 +126,20 @@ struct BinOpExpr : Expr {
     }
   }
   Value value() { return v; }
+};
+
+struct AssignmentNode : Node {
+  unique_ptr<NameExpr> lval;
+  unique_ptr<Expr> rval;
+
+  AssignmentNode(unique_ptr<NameExpr> lval, unique_ptr<Expr> rval)
+      : lval(std::move(lval)), rval(std::move(rval)) {}
+  ~AssignmentNode() {}
+
+  void execute(VM *vm) {
+    rval->execute(vm);
+    vm->frames.back().variables[lval->name] = rval->value();
+  }
 };
 
 struct LoopNode : Node {

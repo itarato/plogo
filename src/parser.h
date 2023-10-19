@@ -46,37 +46,48 @@ struct Parser {
       return parse_fndef();
     } else if (peek().kind == LexemeKind::Keyword && peek().v == "if") {
       return parse_if();
+    } else if (peek().kind == LexemeKind::Name &&
+               peek(1).kind == LexemeKind::Assignment) {
+      return parse_assign();
     } else {
       return parse_fncall();
     }
   }
 
+  unique_ptr<Ast::AssignmentNode> parse_assign() {
+    auto lval = parse_expr_name();
+    assert_lexeme(next(), LexemeKind::Assignment, "");
+    auto rval = parse_expr();
+
+    return make_unique<Ast::AssignmentNode>(std::move(lval), std::move(rval));
+  }
+
   unique_ptr<Ast::IfNode> parse_if() {
     assert_lexeme(next(), LexemeKind::Keyword, "if");
-    assert_lexeme(next().kind, LexemeKind::ParenOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenOpen, "");
 
     unique_ptr<Ast::Expr> condExpr = parse_expr();
 
-    assert_lexeme(next().kind, LexemeKind::ParenClose, "");
-    assert_lexeme(next().kind, LexemeKind::BraceOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenClose, "");
+    assert_lexeme(next(), LexemeKind::BraceOpen, "");
 
     vector<unique_ptr<Ast::Node>> trueStatements{};
     while (peek().kind != LexemeKind::BraceClose) {
       trueStatements.push_back(parse_statement());
     }
 
-    assert_lexeme(next().kind, LexemeKind::BraceClose, "");
+    assert_lexeme(next(), LexemeKind::BraceClose, "");
 
     vector<unique_ptr<Ast::Node>> falseStatements{};
     if (peek().kind == LexemeKind::Keyword && peek().v == "else") {
       assert_lexeme(next(), LexemeKind::Keyword, "else");
-      assert_lexeme(next().kind, LexemeKind::BraceOpen, "");
+      assert_lexeme(next(), LexemeKind::BraceOpen, "");
 
       while (peek().kind != LexemeKind::BraceClose) {
         falseStatements.push_back(parse_statement());
       }
 
-      assert_lexeme(next().kind, LexemeKind::BraceClose, "");
+      assert_lexeme(next(), LexemeKind::BraceClose, "");
     }
 
     return make_unique<Ast::IfNode>(std::move(condExpr),
@@ -90,7 +101,7 @@ struct Parser {
     Lexeme nameToken = next();
     assert_lexeme(nameToken.kind, LexemeKind::Name, "");
 
-    assert_lexeme(next().kind, LexemeKind::ParenOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenOpen, "");
 
     vector<string> argNames{};
     while (true) {
@@ -106,15 +117,15 @@ struct Parser {
       }
     }
 
-    assert_lexeme(next().kind, LexemeKind::ParenClose, "");
-    assert_lexeme(next().kind, LexemeKind::BraceOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenClose, "");
+    assert_lexeme(next(), LexemeKind::BraceOpen, "");
 
     vector<unique_ptr<Ast::Node>> statements;
     while (peek().kind != LexemeKind::BraceClose) {
       statements.push_back(parse_statement());
     }
 
-    assert_lexeme(next().kind, LexemeKind::BraceClose, "");
+    assert_lexeme(next(), LexemeKind::BraceClose, "");
 
     return make_unique<Ast::FnDefNode>(nameToken.v, argNames,
                                        std::move(statements));
@@ -122,19 +133,19 @@ struct Parser {
 
   unique_ptr<Ast::LoopNode> parse_loop() {
     assert_lexeme(next(), LexemeKind::Keyword, "loop");
-    assert_lexeme(next().kind, LexemeKind::ParenOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenOpen, "");
 
     unique_ptr<Ast::Expr> count = parse_expr();
 
-    assert_lexeme(next().kind, LexemeKind::ParenClose, "");
-    assert_lexeme(next().kind, LexemeKind::BraceOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenClose, "");
+    assert_lexeme(next(), LexemeKind::BraceOpen, "");
 
     vector<unique_ptr<Ast::Node>> statements{};
     while (peek().kind != LexemeKind::BraceClose) {
       statements.push_back(parse_statement());
     }
 
-    assert_lexeme(next().kind, LexemeKind::BraceClose, "");
+    assert_lexeme(next(), LexemeKind::BraceClose, "");
 
     return make_unique<Ast::LoopNode>(std::move(count), std::move(statements));
   }
@@ -142,7 +153,7 @@ struct Parser {
   unique_ptr<Ast::FnCallNode> parse_fncall() {
     Lexeme nameToken = next();
     assert_lexeme(nameToken.kind, LexemeKind::Name, "");
-    assert_lexeme(next().kind, LexemeKind::ParenOpen, "");
+    assert_lexeme(next(), LexemeKind::ParenOpen, "");
 
     vector<unique_ptr<Ast::Expr>> args{};
     while (true) {
@@ -158,7 +169,7 @@ struct Parser {
       }
     }
 
-    assert_lexeme(next().kind, LexemeKind::ParenClose, "");
+    assert_lexeme(next(), LexemeKind::ParenClose, "");
 
     return make_unique<Ast::FnCallNode>(nameToken.v, std::move(args));
   }
@@ -185,6 +196,8 @@ struct Parser {
       }
     }
 
+    // TODO: There is no precedence reordering. Do some Polish stacks.
+
     assert_or_throw(exprList.size() == ops.size() + 1,
                     "Operator and operand counts does not align");
 
@@ -203,30 +216,37 @@ struct Parser {
     return std::move(exprList.back());
   }
 
-  unique_ptr<Ast::Expr> parse_expr_number() {
+  unique_ptr<Ast::FloatExpr> parse_expr_number() {
     Lexeme val = next();
     assert_lexeme(val.kind, LexemeKind::Number, "");
     return make_unique<Ast::FloatExpr>(stof(val.v));
   }
 
-  unique_ptr<Ast::Expr> parse_expr_name() {
+  unique_ptr<Ast::NameExpr> parse_expr_name() {
     Lexeme val = next();
     assert_lexeme(val.kind, LexemeKind::Name, "");
     return make_unique<Ast::NameExpr>(val.v);
   }
 
-  unique_ptr<Ast::Expr> parse_expr_string() {
+  unique_ptr<Ast::StringExpr> parse_expr_string() {
     Lexeme val = next();
     assert_lexeme(val.kind, LexemeKind::String, "");
     return make_unique<Ast::StringExpr>(val.v);
   }
 
   bool isEnd() const { return ptr >= lexemes.size(); }
+  bool isEnd(int n) const { return ptr + n >= lexemes.size(); }
   Lexeme peek() const {
     if (isEnd()) {
       throw runtime_error("EOF when peeking lexeme");
     }
     return lexemes.at(ptr);
+  }
+  Lexeme peek(int n) const {
+    if (isEnd(n)) {
+      throw runtime_error("EOF when peeking lexeme");
+    }
+    return lexemes.at(ptr + n);
   }
   Lexeme next() {
     if (isEnd()) {
