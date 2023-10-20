@@ -3,8 +3,8 @@ fn branch(size, angle, thick, dec, limit) {
     f(size)
 
     if (size > limit) {
-        rand("difflhs", 0, 40)
-        rand("diffrhs", 0, 40)
+        difflhs = rand(0, 40)
+        diffrhs = rand(0, 40)
 
         l(difflhs)
         l(angle)
