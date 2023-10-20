@@ -1,0 +1,25 @@
+{
+  "name": "plogolang",
+  "displayName": "plogolang",
+  "description": "PLogo Language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.83.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "plogo",
+      "aliases": ["PLogo", "plogo"],
+      "extensions": [".logo"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "plogo",
+      "scopeName": "source.plogo",
+      "path": "./syntaxes/plogo.tmLanguage.json"
+    }]
+  }
+}

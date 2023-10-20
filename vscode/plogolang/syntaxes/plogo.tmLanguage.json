@@ -1,0 +1,47 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "PLogo",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#logo_methods"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.plogo",
+					"match": "\\b(if|else|loop|fn)\\b"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.plogo",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": []
+		},
+		"numbers": {
+			"name": "keyword.other.unit.plogo",
+			"match": "\\d+\\.?\\d*"
+		},
+		"logo_methods": {
+			"patterns": [
+				{
+					"name": "entity.name.function.plogo",
+					"match": "\\b(forward|backward|left|right|f|b|l|r|up|down|u|d|pos|rand|intvar)\\b"
+				}
+			]
+		}
+	},
+	"scopeName": "source.plogo"
+}
