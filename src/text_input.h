@@ -18,6 +18,7 @@ struct TextInput {
   string command{};
   bool isActive = true;
   bool shiftOn = false;
+  int cursor = 0;
 
   TextInput() {}
 
@@ -58,15 +59,19 @@ struct TextInput {
       }
 
       command.push_back(newChar);
+      cursor++;
     }
 
     if (keyCode == KEY_BACKSPACE && !command.empty()) {
       command.pop_back();
+      cursor--;
     }
 
     if (keyCode == KEY_ENTER) {
       string out{command};
       command.clear();
+      cursor = 0;
+
       return out;
     } else {
       return nullopt;
@@ -76,5 +81,11 @@ struct TextInput {
   void draw() const {
     DrawText(command.c_str(), TEXT_MARGIN,
              GetScreenHeight() - TEXT_MARGIN - TEXT_SIZE, TEXT_SIZE, BLACK);
+
+    string preCursor = command.substr(0, min((int)command.size(), cursor));
+    auto preCursorLen = MeasureText(preCursor.c_str(), TEXT_SIZE);
+    DrawLine(
+        preCursorLen + TEXT_MARGIN, GetScreenHeight() - TEXT_MARGIN - TEXT_SIZE,
+        preCursorLen + TEXT_MARGIN, GetScreenHeight() - TEXT_MARGIN, BLACK);
   }
 };
