@@ -18,6 +18,7 @@ debug: plogo
 plogo: $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
+test: CXXFLAGS += -g -O0
 test: $(TESTOBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 

@@ -28,7 +28,7 @@ bclose]
 fndef      = fn name popen args pclose bopen statement* bclose
 assignment = name assign expr
 args       = expr comma
-expr       = number | name | binop
+expr       = number | name | binop | fncall
 binop      = number op binop | name op binop
 
 **/
@@ -225,7 +225,8 @@ struct FnDefNode : Node {
   void execute(VM *vm) { vm->functions[name] = fn; }
 };
 
-struct FnCallNode : Node {
+struct FnCallNode : Expr {
+  Value v{};
   string fnName;
   vector<unique_ptr<Expr>> args;
 
@@ -274,17 +275,13 @@ struct FnCallNode : Node {
                       "THICKNESS expects a number arg");
       vm->thickness = args[0]->value().floatVal;
     } else if (fnName == "rand") {
-      // TODO Until we make fncalls an expression - we host the variable in the
-      // fn call arglist.
-      assert_or_throw(args.size() == 3, "Expected 3 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::String,
-                      "RAND expects a string arg");
-      assert_or_throw(args[1]->value().kind == ValueKind::Number,
+      assert_or_throw(args.size() == 2, "Expected 2 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
                       "RAND expects a number arg");
-      assert_or_throw(args[2]->value().kind == ValueKind::Number,
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
                       "RAND expects a number arg");
-      vm->frames.back().variables[args[0]->value().strVal] =
-          randf((int)args[1]->value().floatVal, (int)args[2]->value().floatVal);
+      v = Value(randf((int)args[0]->value().floatVal,
+                      (int)args[1]->value().floatVal));
     } else if (fnName == "intvar") {
       assert_or_throw(args.size() == 4, "Expected 4 args");
       assert_or_throw(args[0]->value().kind == ValueKind::String,
@@ -324,6 +321,8 @@ struct FnCallNode : Node {
       vm->frames.pop_back();
     }
   }
+
+  Value value() { return v; }
 
   ~FnCallNode() {}
 };

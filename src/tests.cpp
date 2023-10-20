@@ -168,6 +168,11 @@ int main() {
   test_vm("a = 123 f(a)",
           [](VM* vm) { ASSERT(eqf(vm->pos.y, -123.0), "y is -123.0"); });
 
+  test_vm("a = rand(3, 4) f(a)", [](VM* vm) {
+    ASSERT(vm->pos.y <= -3.0, "y is less than -3");
+    ASSERT(vm->pos.y >= -4.0, "y is less than -4");
+  });
+
   // Error scenarios:
   test_vm_raise("forward");
   test_vm_raise("forward()");

@@ -182,7 +182,11 @@ struct Parser {
       if (peek().kind == LexemeKind::Number) {
         exprList.push_back(parse_expr_number());
       } else if (peek().kind == LexemeKind::Name) {
-        exprList.push_back(parse_expr_name());
+        if (peek(1).kind == LexemeKind::ParenOpen) {
+          exprList.push_back(parse_fncall());
+        } else {
+          exprList.push_back(parse_expr_name());
+        }
       } else if (peek().kind == LexemeKind::String) {
         exprList.push_back(parse_expr_string());
       } else {
