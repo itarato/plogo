@@ -11,4 +11,8 @@ fn poly(sides, size, dec, limit) {
 
 pos(300, 100)
 r(90)
-poly(6, 300, 3, 10)
+
+intvar("sides", 2, 12, 3)
+intvar("size", 10, 400, 400)
+intvar("div", 2, 6, 2)
+poly(sides, size, div, 10)

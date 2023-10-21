@@ -1,0 +1,16 @@
+fn circle(size, iter, slice, limit) {
+  loop (slice) {
+    loop (iter / slice) {
+      f(size)
+      r(360 / iter)
+    }
+
+    if (size > limit) {
+      r(180)
+      circle(size / 2, iter, slice, limit)
+      r(180)
+    }
+  }
+}
+
+circle(20, 24, 3, 1)
