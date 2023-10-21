@@ -83,9 +83,32 @@ struct Value {
 
   Value lt(Value &other) {
     if (!is_same_kind(other, ValueKind::Number)) {
-      throw runtime_error("'lt 'on non numbers");
+      throw runtime_error("'lt' on non numbers");
     }
     return Value(floatVal < other.floatVal);
+  }
+
+  Value lte(Value &other) {
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'lte' on non numbers");
+    }
+    bool result = (floatVal < other.floatVal) || eqf(floatVal, other.floatVal);
+    return Value(result);
+  }
+
+  Value eq(Value &other) {
+    if (is_same_kind(other, ValueKind::Number)) {
+      return Value(eqf(floatVal, other.floatVal));
+    }
+    if (is_same_kind(other, ValueKind::String)) {
+      return Value(strVal == other.strVal);
+    }
+    if (is_same_kind(other, ValueKind::Boolean)) {
+      return Value(boolVal == other.boolVal);
+    }
+
+    throw runtime_error("'eq' on non numbers");
+    return Value{};
   }
 
   inline bool is_same_kind(Value &other, ValueKind assertedKind) {

@@ -47,7 +47,7 @@ void test_tokens(string code, vector<pair<LexemeKind, string>> expected) {
     }
   }
 
-  PASS("test_tokens");
+  PASS("test_tokens: %s", code.c_str());
 }
 
 void test_vm(string code, void (*testFn)(VM*)) {
@@ -131,6 +131,18 @@ int main() {
   test_tokens("a = 1", {{LexemeKind::Name, "a"},
                         {LexemeKind::Assignment, ""},
                         {LexemeKind::Number, "1"}});
+
+  test_tokens("+ - * / < > <= >= ==", {
+                                          {LexemeKind::Op, "+"},
+                                          {LexemeKind::Op, "-"},
+                                          {LexemeKind::Op, "*"},
+                                          {LexemeKind::Op, "/"},
+                                          {LexemeKind::Op, "<"},
+                                          {LexemeKind::Op, ">"},
+                                          {LexemeKind::Op, "<="},
+                                          {LexemeKind::Op, ">="},
+                                          {LexemeKind::Op, "=="},
+                                      });
 
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");

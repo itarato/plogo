@@ -121,6 +121,12 @@ struct BinOpExpr : Expr {
       v = lhsVal.lt(rhsVal);
     } else if (op == ">") {
       v = rhsVal.lt(lhsVal);
+    } else if (op == "<=") {
+      v = lhsVal.lte(rhsVal);
+    } else if (op == ">=") {
+      v = rhsVal.lte(lhsVal);
+    } else if (op == "==") {
+      v = lhsVal.eq(rhsVal);
     } else {
       THROW("Unknown op: %s", op.c_str());
     }

@@ -35,7 +35,7 @@ int precedence(string s) {
   }
 
   THROW("Unexpected op in precedence check: %s", s);
-  return -1;  // To satisfy return expectation.
+  return -1;  // Unreachable, to satisfy return expectation.
 }
 
 struct Lexeme {
@@ -84,14 +84,24 @@ struct Lexer {
       } else if (c == ',') {
         lexemes.push_back(Lexeme(LexemeKind::Comma));
         next();
-      } else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '<' ||
-                 c == '>') {
+      } else if (c == '+' || c == '-' || c == '*' || c == '/') {
         string opStr{c};
         lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
         next();
-      } else if (c == '=') {
-        lexemes.push_back(Lexeme(LexemeKind::Assignment));
+      } else if (c == '<' || c == '>') {
         next();
+        string opStr{c};
+        if (peek() == '=') opStr.push_back(next());
+        lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
+      } else if (c == '=') {
+        next();
+
+        if (peek() == '=') {
+          next();
+          lexemes.push_back(Lexeme(LexemeKind::Op, "=="));
+        } else {
+          lexemes.push_back(Lexeme(LexemeKind::Assignment));
+        }
       } else {
         THROW("Unknown character in lexing: %c", c);
       }
