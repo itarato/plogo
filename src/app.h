@@ -44,6 +44,8 @@ struct App {
 
     rlImGuiSetup(true);
 
+    textInput.init();
+
     reset();
   }
 
