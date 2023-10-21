@@ -8,6 +8,8 @@
 ## Commands
 
 ```
+clear()
+
 pos(<val>, <val>)
 
 forward(<length>)
@@ -29,7 +31,7 @@ if (<cond>) {
 fn <name>(<arg1>, <arg2>, ..) {
 }
 
-rand(<varname>, <min>, <max>)
+rand(<min>, <max>)
 
 intvar(<varname>, <min>, <max>, <default>)
 ```

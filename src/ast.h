@@ -282,6 +282,8 @@ struct FnCallNode : Expr {
                       "RAND expects a number arg");
       v = Value(randf((int)args[0]->value().floatVal,
                       (int)args[1]->value().floatVal));
+    } else if (fnName == "clear" || fnName == "c") {
+      vm->reset();
     } else if (fnName == "intvar") {
       assert_or_throw(args.size() == 4, "Expected 4 args");
       assert_or_throw(args[0]->value().kind == ValueKind::String,
