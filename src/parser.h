@@ -194,30 +194,39 @@ struct Parser {
       }
 
       if (peek().kind == LexemeKind::Op) {
-        ops.push_back(next().v);
+        string nextOp = next().v;
+        while (!ops.empty() && precedence(ops.back()) < precedence(nextOp)) {
+          reduceBinOps(exprList, ops);
+        }
+
+        ops.push_back(nextOp);
       } else {
         break;
       }
     }
 
-    // TODO: There is no precedence reordering. Do some Polish stacks.
-
     assert_or_throw(exprList.size() == ops.size() + 1,
                     "Operator and operand counts does not align");
 
-    for (auto& op : ops) {
-      auto rhs = std::move(exprList.back());
-      exprList.pop_back();
-      auto lhs = std::move(exprList.back());
-      exprList.pop_back();
-
-      unique_ptr<Ast::Expr> newExpr =
-          make_unique<Ast::BinOpExpr>(op, std::move(lhs), std::move(rhs));
-      exprList.push_back(std::move(newExpr));
+    while (!ops.empty()) {
+      reduceBinOps(exprList, ops);
     }
 
     assert_or_throw(exprList.size() == 1, "Expected 1 operand to stay");
     return std::move(exprList.back());
+  }
+
+  void reduceBinOps(vector<unique_ptr<Ast::Expr>> &exprList,
+                    vector<string> &ops) {
+    auto rhs = std::move(exprList.back());
+    exprList.pop_back();
+    auto lhs = std::move(exprList.back());
+    exprList.pop_back();
+
+    unique_ptr<Ast::Expr> newExpr =
+        make_unique<Ast::BinOpExpr>(ops.back(), std::move(lhs), std::move(rhs));
+    ops.pop_back();
+    exprList.push_back(std::move(newExpr));
   }
 
   unique_ptr<Ast::FloatExpr> parse_expr_number() {

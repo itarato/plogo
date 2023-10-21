@@ -173,6 +173,13 @@ int main() {
     ASSERT(vm->pos.y >= -4.0, "y is less than -4");
   });
 
+  test_vm("f(10 * 10 + 10)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
+  test_vm("f(10 + 10 * 10)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
+  test_vm("f(5 + 10 * 10 + 10 - 5)",
+          [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
+
   // Error scenarios:
   test_vm_raise("forward");
   test_vm_raise("forward()");

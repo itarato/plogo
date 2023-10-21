@@ -25,6 +25,19 @@ enum class LexemeKind {
   Assignment,
 };
 
+int precedence(string s) {
+  if (s == "<" || s == ">") {
+    return 3;
+  } else if (s == "+" || s == "-") {
+    return 2;
+  } else if (s == "*" || s == "/") {
+    return 1;
+  }
+
+  THROW("Unexpected op in precedence check: %s", s);
+  return -1;  // To satisfy return expectation.
+}
+
 struct Lexeme {
   LexemeKind kind;
   string v{};
