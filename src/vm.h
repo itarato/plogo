@@ -48,6 +48,13 @@ struct VM {
 
   VM() { frames.emplace_back(); }
 
+  void hardReset() {
+    frames.clear();
+    frames.emplace_back();
+
+    reset();
+  }
+
   void reset() {
     // Leave base frame.
     // Risk: base frame is always kept as is - assuming that initialization of a

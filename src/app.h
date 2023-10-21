@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <vector>
@@ -30,6 +32,7 @@ struct App {
   bool needScriptReload{false};
 
   char *sourceFileName{nullptr};
+  chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
   App() {}
   App(const App &) = delete;
@@ -56,6 +59,10 @@ struct App {
 
   void scriptReload() {
     if (sourceFileName == nullptr) return;
+
+    INFO("Reloading script: %s", sourceFileName);
+
+    sourceFileUpdateTime = getSourceFileUpdateTime();
 
     vm.reset();
 
@@ -110,6 +117,8 @@ struct App {
       needScriptReload = true;
     }
 
+    checkSourceForUpdates();
+
     if (needScriptReload) scriptReload();
 
     auto command = textInput.update();
@@ -120,6 +129,21 @@ struct App {
         WARN("Compile error: %s", e.what());
       }
     }
+  }
+
+  void checkSourceForUpdates() {
+    if (sourceFileName == nullptr) return;
+
+    auto currentTime = getSourceFileUpdateTime();
+    if (currentTime != sourceFileUpdateTime) {
+      vm.hardReset();
+      scriptReload();
+    }
+  }
+
+  chrono::time_point<chrono::file_clock> getSourceFileUpdateTime() {
+    filesystem::path p{sourceFileName};
+    return filesystem::last_write_time(p);
   }
 
   void drawPanel() {

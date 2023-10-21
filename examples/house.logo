@@ -1,4 +1,4 @@
-intvar("size", 1, 300, 100)
+intvar("size", 1, 300, 200)
 
 r(90)
 
