@@ -1,0 +1,29 @@
+fn zigzag(size, limit) {
+  if (size > limit) {
+    shape(size / 3, limit)
+    up()
+    f(size / 3)
+    r(180)
+    down()
+    shape(size / 3, limit)
+    up()
+    r(180)
+    f(size / 3)
+    down()
+    shape(size / 3, limit)
+  } else {
+    f(size)
+  }
+}
+
+fn shape(size, limit) {
+    r(45)
+    zigzag(size, limit)
+    l(90)
+    zigzag(size, limit)
+    r(45)
+}
+
+intvar("size", 4, 400, 100)
+intvar("limit", 4, 200, 100)
+shape(size, limit)
