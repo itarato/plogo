@@ -19,6 +19,8 @@ struct TextInput {
   bool isActive = true;
   bool shiftOn = false;
   int cursor = 0;
+  vector<string> commandHistory{};
+  int commandHistoryPtr{0};
 
   TextInput() {}
 
@@ -58,24 +60,47 @@ struct TextInput {
         newChar = tolower(char(keyCode));
       }
 
-      command.push_back(newChar);
+      command.insert(cursor, 1, newChar);
       cursor++;
     }
 
     if (keyCode == KEY_BACKSPACE && !command.empty()) {
-      command.pop_back();
+      command.erase(cursor - 1, 1);
       cursor--;
     }
 
     if (keyCode == KEY_ENTER) {
       string out{command};
+      commandHistory.push_back(command);
       command.clear();
       cursor = 0;
+      commandHistoryPtr = commandHistory.size();
 
       return out;
-    } else {
-      return nullopt;
     }
+
+    if (keyCode == KEY_LEFT) cursor--;
+    if (keyCode == KEY_RIGHT) cursor++;
+    cursor = toRange(cursor, 0, (int)command.size());
+
+    if (keyCode == KEY_UP && commandHistoryPtr > 0) {
+      commandHistoryPtr--;
+      command = commandHistory[commandHistoryPtr];
+      cursor = command.size();
+    }
+    if (keyCode == KEY_DOWN) {
+      if ((commandHistoryPtr + 1) < commandHistory.size()) {
+        commandHistoryPtr++;
+        command = commandHistory[commandHistoryPtr];
+        cursor = command.size();
+      } else if ((commandHistoryPtr + 1) == commandHistory.size()) {
+        commandHistoryPtr++;
+        command.clear();
+        cursor = command.size();
+      }
+    }
+
+    return nullopt;
   }
 
   void draw() const {
