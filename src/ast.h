@@ -275,6 +275,11 @@ struct FnCallNode : Expr {
       assert_or_throw(args[1]->value().kind == ValueKind::Number,
                       "POS expects number args");
       vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
+    } else if (fnName == "angle") {
+      assert_or_throw(args.size() == 1, "Expected 1 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "POS expects number args");
+      vm->angle = args[0]->value().floatVal;
     } else if (fnName == "thickness" || fnName == "thick" || fnName == "t") {
       assert_or_throw(args.size() == 1, "Expected 1 args");
       assert_or_throw(args[0]->value().kind == ValueKind::Number,
@@ -308,6 +313,14 @@ struct FnCallNode : Expr {
       if (!vm->frames.front().variables.contains(name)) {
         vm->frames.front().variables[name] = args[3]->value();
       }
+    } else if (fnName == "getx") {
+      assert_or_throw(args.size() == 0, "Expected 0 args");
+      v = Value(vm->pos.x);
+    } else if (fnName == "gety") {
+      assert_or_throw(args.size() == 0, "Expected 0 args");
+      v = Value(vm->pos.y);
+    } else if (fnName == "getangle") {
+      v = Value(vm->angle);
     } else {
       if (!vm->functions.contains(fnName)) {
         THROW("Unrecognized function name: %s", fnName.c_str());

@@ -1,0 +1,27 @@
+fn leaf(size, angle, iter, dec, limit) {
+  x = getx()
+  y = gety()
+  oldangle = getangle()
+
+  loop (iter) {
+    f(size)
+    r(angle)
+    size = size * dec
+
+    if (size > limit) {
+      l(90)
+      leaf(size * 0.5, angle, iter * 0.7, dec, limit)
+      l(180)
+      leaf(size * 0.5, angle, iter * 0.7, dec, limit)
+      l(90)
+    }
+  }
+
+  pos(x, y)
+  angle(oldangle)
+
+}
+
+pos(500, 650)
+angle(350)
+leaf(120, 10, 18, 0.85, 1)
