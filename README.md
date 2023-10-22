@@ -44,9 +44,3 @@ leaf(size, angle, iter, dec, limit)
 ```
 
 ![Leaf fractal](./misc/frac_leaf.png)
-
-## Variables
-
-Variable control UI can be obtained with `intvar`, eg: `intvar("size", 0, 200, 50)`.
-
-![Tree example](./misc/frac_tree_vars.png)
