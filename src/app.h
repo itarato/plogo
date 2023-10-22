@@ -159,41 +159,43 @@ struct App {
     int prevVstarty{vstarty};
     int prevVstartangle{vstartangle};
 
-    ImGui::Begin("Variables");
+    ImGui::Begin("Toolbar");
 
-    int intVarBackend[INTVARLIMIT];
-    assert(vm.intVars.size() < INTVARLIMIT);
+    if (ImGui::CollapsingHeader("Variables", ImGuiTreeNodeFlags_DefaultOpen)) {
+      int intVarBackend[INTVARLIMIT];
+      assert(vm.intVars.size() < INTVARLIMIT);
 
-    int i = 0;
-    for (auto &[k, v] : vm.intVars) {
-      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+      int i = 0;
+      for (auto &[k, v] : vm.intVars) {
+        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
 
-      bool changed =
-          ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
+        bool changed =
+            ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
-      if (changed) {
-        didChange = true;
-        vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+        if (changed) {
+          didChange = true;
+          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+        }
+
+        i++;
       }
 
-      i++;
+      ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
+      ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
+      ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
     }
 
-    ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
-    ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
-    ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
-
-    ImGui::End();
-
-    ImGui::Begin("Help");
-    ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
-    for (auto e : builtInFunctions) {
-      ImGui::Text("- %s", e.c_str());
+    if (ImGui::CollapsingHeader("Help")) {
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
+      for (auto e : builtInFunctions) {
+        ImGui::BulletText("%s", e.c_str());
+      }
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
+      for (auto &[k, _v] : vm.functions) {
+        ImGui::BulletText("%s", k.c_str());
+      }
     }
-    ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
-    for (auto &[k, _v] : vm.functions) {
-      ImGui::Text("- %s", k.c_str());
-    }
+
     ImGui::End();
 
     rlImGuiEnd();
