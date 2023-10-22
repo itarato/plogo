@@ -1,18 +1,20 @@
-fn leaf(size, angle, iter, dec, limit) {
+fn leaf(size, angle, iter, dec, limit, thickness) {
   x = getx()
   y = gety()
   oldangle = getangle()
 
   loop (iter) {
+    t(thickness)
     f(size)
     r(angle)
     size = size * dec
+    thickness = thickness * 0.9
 
     if (size > limit) {
       l(90)
-      leaf(size * 0.5, angle, iter * 0.7, dec, limit)
+      leaf(size * 0.5, angle, iter * 0.7, dec, limit, thickness * 0.6)
       l(180)
-      leaf(size * 0.5, angle, iter * 0.7, dec, limit)
+      leaf(size * 0.5, angle, iter * 0.7, dec, limit, thickness * 0.6)
       l(90)
     }
   }
@@ -27,4 +29,4 @@ intvar("iter", 2, 26, 18)
 intvar("dec", 0.5, 1, 0.85)
 intvar("limit", 0.5, 5, 1)
 
-leaf(size, angle, iter, dec, limit)
+leaf(size, angle, iter, dec, limit, 10)
