@@ -47,7 +47,7 @@ struct Parser {
     } else if (peek().kind == LexemeKind::Keyword && peek().v == "if") {
       return parse_if();
     } else if (peek().kind == LexemeKind::Name &&
-               peek(1).kind == LexemeKind::Assignment) {
+               (!isEnd(1) && peek(1).kind == LexemeKind::Assignment)) {
       return parse_assign();
     } else {
       return parse_fncall();
@@ -79,7 +79,7 @@ struct Parser {
     assert_lexeme(next(), LexemeKind::BraceClose, "");
 
     vector<unique_ptr<Ast::Node>> falseStatements{};
-    if (peek().kind == LexemeKind::Keyword && peek().v == "else") {
+    if (!isEnd() && peek().kind == LexemeKind::Keyword && peek().v == "else") {
       assert_lexeme(next(), LexemeKind::Keyword, "else");
       assert_lexeme(next(), LexemeKind::BraceOpen, "");
 
@@ -109,12 +109,9 @@ struct Parser {
 
       argNames.push_back(next().v);
 
-      if (peek().kind == LexemeKind::Comma) {
-        next();
-        continue;
-      } else {
-        break;
-      }
+      if (peek().kind != LexemeKind::Comma) break;
+
+      next();
     }
 
     assert_lexeme(next(), LexemeKind::ParenClose, "");
@@ -161,12 +158,8 @@ struct Parser {
 
       args.push_back(parse_expr());
 
-      if (peek().kind == LexemeKind::Comma) {
-        next();
-        continue;
-      } else {
-        break;
-      }
+      if (peek().kind != LexemeKind::Comma) break;
+      next();
     }
 
     assert_lexeme(next(), LexemeKind::ParenClose, "");
@@ -182,7 +175,7 @@ struct Parser {
       if (peek().kind == LexemeKind::Number) {
         exprList.push_back(parse_expr_number());
       } else if (peek().kind == LexemeKind::Name) {
-        if (peek(1).kind == LexemeKind::ParenOpen) {
+        if (!isEnd(1) && peek(1).kind == LexemeKind::ParenOpen) {
           exprList.push_back(parse_fncall());
         } else {
           exprList.push_back(parse_expr_name());
@@ -193,16 +186,14 @@ struct Parser {
         throw runtime_error("Unexpected lexeme kind for expression");
       }
 
-      if (peek().kind == LexemeKind::Op) {
-        string nextOp = next().v;
-        while (!ops.empty() && precedence(ops.back()) < precedence(nextOp)) {
-          reduceBinOps(exprList, ops);
-        }
+      if (isEnd() || peek().kind != LexemeKind::Op) break;
 
-        ops.push_back(nextOp);
-      } else {
-        break;
+      string nextOp = next().v;
+      while (!ops.empty() && precedence(ops.back()) < precedence(nextOp)) {
+        reduceBinOps(exprList, ops);
       }
+
+      ops.push_back(nextOp);
     }
 
     assert_or_throw(exprList.size() == ops.size() + 1,
@@ -250,21 +241,18 @@ struct Parser {
   bool isEnd() const { return ptr >= lexemes.size(); }
   bool isEnd(int n) const { return ptr + n >= lexemes.size(); }
   Lexeme peek() const {
-    if (isEnd()) {
-      throw runtime_error("EOF when peeking lexeme");
-    }
+    if (isEnd()) throw runtime_error("EOF when peeking lexeme");
+
     return lexemes.at(ptr);
   }
   Lexeme peek(int n) const {
-    if (isEnd(n)) {
-      throw runtime_error("EOF when peeking lexeme");
-    }
+    if (isEnd(n)) throw runtime_error("EOF when peeking lexeme");
+
     return lexemes.at(ptr + n);
   }
   Lexeme next() {
-    if (isEnd()) {
-      throw runtime_error("EOF when asking next lexeme");
-    }
+    if (isEnd()) throw runtime_error("EOF when asking next lexeme");
+
     return lexemes.at(ptr++);
   }
 };

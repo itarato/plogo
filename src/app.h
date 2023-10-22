@@ -180,6 +180,8 @@ struct App {
         i++;
       }
 
+      ImGui::Separator();
+
       ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
       ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
       ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
@@ -190,9 +192,26 @@ struct App {
       for (auto e : builtInFunctions) {
         ImGui::BulletText("%s", e.c_str());
       }
+
+      ImGui::Separator();
+
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
       for (auto &[k, _v] : vm.functions) {
         ImGui::BulletText("%s", k.c_str());
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Debug")) {
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Root variables:");
+      ImGui::BulletText("Position -> x = %.2f y = %.2f", vm.pos.x, vm.pos.y);
+      ImGui::BulletText("Angle -> %.2f", vm.angle);
+      ImGui::BulletText("Thickness -> %.2f", vm.thickness);
+
+      ImGui::Separator();
+
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Top frame variables:");
+      for (auto &[k, v] : vm.frames.front().variables) {
+        ImGui::BulletText("%s = %.2f", k.c_str(), v.floatVal);
       }
     }
 
