@@ -275,12 +275,12 @@ struct FnCallNode : Expr {
       assert_or_throw(args[1]->value().kind == ValueKind::Number,
                       "POS expects number args");
       vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
-    } else if (fnName == "angle") {
+    } else if (fnName == "angle" || fnName == "a") {
       assert_or_throw(args.size() == 1, "Expected 1 args");
       assert_or_throw(args[0]->value().kind == ValueKind::Number,
                       "POS expects number args");
       vm->angle = args[0]->value().floatVal;
-    } else if (fnName == "thickness" || fnName == "thick" || fnName == "t") {
+    } else if (fnName == "thickness" || fnName == "t") {
       assert_or_throw(args.size() == 1, "Expected 1 args");
       assert_or_throw(args[0]->value().kind == ValueKind::Number,
                       "THICKNESS expects a number arg");

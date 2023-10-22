@@ -21,6 +21,11 @@ using namespace std;
 
 #define INTVARLIMIT 32
 
+const vector<string> builtInFunctions{
+    "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
+    "down [d]",    "pos [p]",      "angle [a]", "thickness [t]", "rand",
+    "clear [c]",   "intvar",       "getx",      "gety",          "getangle"};
+
 struct App {
   TextInput textInput{};
   VM vm{};
@@ -178,6 +183,17 @@ struct App {
     ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
     ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
 
+    ImGui::End();
+
+    ImGui::Begin("Help");
+    ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
+    for (auto e : builtInFunctions) {
+      ImGui::Text("- %s", e.c_str());
+    }
+    ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
+    for (auto &[k, _v] : vm.functions) {
+      ImGui::Text("- %s", k.c_str());
+    }
     ImGui::End();
 
     rlImGuiEnd();
