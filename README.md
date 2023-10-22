@@ -2,39 +2,11 @@
 
 ## Use
 
+- compile static version of [Raylib](https://github.com/raysan5/raylib/wiki/Working-on-GNU-Linux)
+- fetch submodules (`git submodule init && git submodule update`)
+- run tests `make clean && make test && ./test`
 - compile: `make`
 - run: `./main` or `./main <SOURCE>`
-
-## Commands
-
-```
-clear()
-
-pos(<val>, <val>)
-
-forward(<length>)
-backward(<length>)
-
-left(<angle>)
-right(<angle>)
-
-loop (<number>) {
-}
-
-if (<cond>) {
-}
-
-if (<cond>) {
-} else {
-}
-
-fn <name>(<arg1>, <arg2>, ..) {
-}
-
-rand(<min>, <max>)
-
-intvar(<varname>, <min>, <max>, <default>)
-```
 
 ## Example
 
