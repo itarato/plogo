@@ -38,7 +38,7 @@
 			"patterns": [
 				{
 					"name": "entity.name.function.plogo",
-					"match": "\\b(forward|backward|left|right|f|b|l|r|up|down|u|d|pos|rand|intvar)\\b"
+					"match": "\\b(forward|backward|left|right|f|b|l|r|up|down|u|d|pos|rand|intvar|floatvar|clear|c|getx|gety|getangle|angle|a|thickness|t)\\b"
 				}
 			]
 		}

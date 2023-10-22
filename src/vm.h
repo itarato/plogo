@@ -33,6 +33,11 @@ struct IntVar {
   int max;
 };
 
+struct FloatVar {
+  float min;
+  float max;
+};
+
 struct VM {
   Vector2 pos{};
   float angle = 0.0f;
@@ -45,6 +50,7 @@ struct VM {
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
   unordered_map<string, IntVar> intVars{};
+  unordered_map<string, FloatVar> floatVars{};
 
   VM() { frames.emplace_back(); }
 
@@ -66,6 +72,7 @@ struct VM {
     history.clear();
     functions.clear();
     intVars.clear();
+    floatVars.clear();
 
     angle = 0.0f;
     isDown = true;

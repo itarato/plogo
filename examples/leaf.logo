@@ -26,7 +26,7 @@ fn leaf(size, angle, iter, dec, limit, thickness) {
 intvar("size", 10, 130, 120)
 intvar("angle", 0, 60, 10)
 intvar("iter", 2, 26, 18)
-intvar("dec", 0.5, 1, 0.85)
 intvar("limit", 0.5, 5, 1)
+floatvar("dec", 0.5, 1, 0.85)
 
 leaf(size, angle, iter, dec, limit, 10)

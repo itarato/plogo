@@ -313,6 +313,24 @@ struct FnCallNode : Expr {
       if (!vm->frames.front().variables.contains(name)) {
         vm->frames.front().variables[name] = args[3]->value();
       }
+    } else if (fnName == "floatvar") {
+      assert_or_throw(args.size() == 4, "Expected 4 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::String,
+                      "intvar expects a string arg");
+      assert_or_throw(args[1]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[2]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[3]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
+      // fully put Logo structs (non ref / non pointer) into VM.
+      string name{args[0]->value().strVal};
+      vm->floatVars[name] =
+          FloatVar{args[1]->value().floatVal, args[2]->value().floatVal};
+      if (!vm->frames.front().variables.contains(name)) {
+        vm->frames.front().variables[name] = args[3]->value();
+      }
     } else if (fnName == "getx") {
       assert_or_throw(args.size() == 0, "Expected 0 args");
       v = Value(vm->pos.x);

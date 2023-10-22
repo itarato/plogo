@@ -20,6 +20,7 @@
 using namespace std;
 
 #define INTVARLIMIT 32
+#define FLOATVARLIMIT 32
 
 const vector<string> builtInFunctions{
     "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
@@ -171,6 +172,8 @@ struct App {
 
       int intVarBackend[INTVARLIMIT];
       assert(vm.intVars.size() < INTVARLIMIT);
+      float floatVarBackend[FLOATVARLIMIT];
+      assert(vm.floatVars.size() < FLOATVARLIMIT);
 
       int i = 0;
       for (auto &[k, v] : vm.intVars) {
@@ -185,6 +188,21 @@ struct App {
         }
 
         i++;
+      }
+
+      int j = 0;
+      for (auto &[k, v] : vm.floatVars) {
+        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
+
+        bool changed =
+            ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
+
+        if (changed) {
+          didChange = true;
+          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+        }
+
+        j++;
       }
 
       ImGui::Separator();
