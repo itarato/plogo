@@ -39,23 +39,39 @@ intvar(<varname>, <min>, <max>, <default>)
 ## Example
 
 ```
-fn triangle(size, limit) {
-    loop (3) {
-        if (size > limit) {
-            triangle(size / 2, limit)
-        }
+fn leaf(size, angle, iter, dec, limit) {
+  x = getx()
+  y = gety()
+  oldangle = getangle()
 
-        f(size)
-        r(120)
+  loop (iter) {
+    f(size)
+    r(angle)
+    size = size * dec
+
+    if (size > limit) {
+      l(90)
+      leaf(size * 0.5, angle, iter * 0.7, dec, limit)
+      l(180)
+      leaf(size * 0.5, angle, iter * 0.7, dec, limit)
+      l(90)
     }
+  }
+
+  pos(x, y)
+  angle(oldangle)
 }
 
-pos(200, 100)
-r(90)
-triangle(600, 10)
+intvar("size", 10, 130, 120)
+intvar("angle", 0, 60, 10)
+intvar("iter", 2, 26, 18)
+intvar("dec", 0.5, 1, 0.85)
+intvar("limit", 0.5, 5, 1)
+
+leaf(size, angle, iter, dec, limit)
 ```
 
-![Triangle fractal](./misc/frac_triangle.png)
+![Leaf fractal](./misc/frac_leaf.png)
 
 ## Variables
 

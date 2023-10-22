@@ -103,7 +103,6 @@ struct App {
       ClearBackground(RAYWHITE);
 
       draw();
-
       drawPanel();
 
       EndDrawing();
@@ -153,15 +152,23 @@ struct App {
 
   void drawPanel() {
     rlImGuiBegin();
-
-    bool didChange{false};
-    int prevVstartx{vstartx};
-    int prevVstarty{vstarty};
-    int prevVstartangle{vstartangle};
-
     ImGui::Begin("Toolbar");
 
+    drawToolbarVariables();
+    drawToolbarHelp();
+    drawToolbarDebug();
+
+    ImGui::End();
+    rlImGuiEnd();
+  }
+
+  void drawToolbarVariables() {
     if (ImGui::CollapsingHeader("Variables", ImGuiTreeNodeFlags_DefaultOpen)) {
+      bool didChange{false};
+      int prevVstartx{vstartx};
+      int prevVstarty{vstarty};
+      int prevVstartangle{vstartangle};
+
       int intVarBackend[INTVARLIMIT];
       assert(vm.intVars.size() < INTVARLIMIT);
 
@@ -185,22 +192,14 @@ struct App {
       ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
       ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
       ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
+
+      needScriptReload = didChange || vstartx != prevVstartx ||
+                         vstarty != prevVstarty ||
+                         vstartangle != prevVstartangle;
     }
+  }
 
-    if (ImGui::CollapsingHeader("Help")) {
-      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
-      for (auto e : builtInFunctions) {
-        ImGui::BulletText("%s", e.c_str());
-      }
-
-      ImGui::Separator();
-
-      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
-      for (auto &[k, _v] : vm.functions) {
-        ImGui::BulletText("%s", k.c_str());
-      }
-    }
-
+  void drawToolbarDebug() {
     if (ImGui::CollapsingHeader("Debug")) {
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Root variables:");
       ImGui::BulletText("Position -> x = %.2f y = %.2f", vm.pos.x, vm.pos.y);
@@ -214,13 +213,22 @@ struct App {
         ImGui::BulletText("%s = %.2f", k.c_str(), v.floatVal);
       }
     }
+  }
 
-    ImGui::End();
+  void drawToolbarHelp() {
+    if (ImGui::CollapsingHeader("Help")) {
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
+      for (auto e : builtInFunctions) {
+        ImGui::BulletText("%s", e.c_str());
+      }
 
-    rlImGuiEnd();
+      ImGui::Separator();
 
-    needScriptReload = didChange || vstartx != prevVstartx ||
-                       vstarty != prevVstarty || vstartangle != prevVstartangle;
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
+      for (auto &[k, _v] : vm.functions) {
+        ImGui::BulletText("%s", k.c_str());
+      }
+    }
   }
 
   void draw() const {
