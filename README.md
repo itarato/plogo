@@ -43,4 +43,14 @@ intvar("limit", 0.5, 5, 1)
 leaf(size, angle, iter, dec, limit)
 ```
 
-![Leaf fractal](./misc/frac_leaf.png)
+![Leaf fractal](./misc/frac_leaf_gen.png)
+
+## Examples
+
+![Hilbert space filling curve](./misc/frac_hilbert.png)
+
+![Tree fractal](./misc/frac_tree_vars.png)
+
+![Triangle fractal](./misc/frac_triangle.png)
+
+![Zigzag fractal](./misc/frac_zigzag.png)

@@ -9,6 +9,4 @@ fn triangle(size, limit) {
     }
 }
 
-pos(200, 100)
-r(90)
 triangle(600, 10)
