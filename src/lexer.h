@@ -34,7 +34,7 @@ int precedence(string s) {
     return 1;
   }
 
-  THROW("Unexpected op in precedence check: %s", s);
+  THROW("Unexpected op in precedence check: %s", s.c_str());
   return -1;  // Unreachable, to satisfy return expectation.
 }
 

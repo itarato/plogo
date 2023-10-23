@@ -27,6 +27,9 @@ struct Line {
   Vector2 to;
   float thickness;
   Color color;
+
+  Line(Vector2 from, Vector2 to, float thickness, Color color)
+      : from(from), to(to), thickness(thickness), color(color) {}
 };
 
 struct IntVar {
@@ -89,9 +92,7 @@ struct VM {
     pos.x += sinf(rad()) * v;
     pos.y += cosf(rad()) * -v;
 
-    if (isDown) {
-      history.emplace_back(prevPos, pos, thickness, color);
-    }
+    if (isDown) history.emplace_back(prevPos, pos, thickness, color);
   }
 
   void backward(float v) { forward(-v); }
