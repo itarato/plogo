@@ -11,14 +11,14 @@ void assert_lexeme(Lexeme lexeme, LexemeKind kind, string v) {
   char msgbuf[128];
 
   if (lexeme.kind != kind) {
-    sprintf(msgbuf, "Lexeme mismatch. Expected kind %d but got: %d",
-            static_cast<int>(kind), static_cast<int>(lexeme.kind));
+    snprintf(msgbuf, 128, "Lexeme mismatch. Expected kind %d but got: %d",
+             static_cast<int>(kind), static_cast<int>(lexeme.kind));
     throw runtime_error(msgbuf);
   }
 
   if (lexeme.v != v) {
-    sprintf(msgbuf, "Lexeme mismatch. Expected value: %s but got: %s",
-            v.c_str(), lexeme.v.c_str());
+    snprintf(msgbuf, 128, "Lexeme mismatch. Expected value: %s but got: %s",
+             v.c_str(), lexeme.v.c_str());
     throw runtime_error(msgbuf);
   }
 }

@@ -36,7 +36,7 @@ void throw_runtime_error(const char* s, ...) {
   va_start(args, s);
 
   char msgbuf[128];
-  sprintf(msgbuf, s, args);
+  snprintf(msgbuf, 128, s, args);
 
   va_end(args);
 
