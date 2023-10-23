@@ -1,5 +1,12 @@
+UNAME_S := $(shell uname -s)
 CXXFLAGS = -std=c++2a -Wall -pedantic -Wformat -I./lib/imgui -I./lib/rlImGui
-LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+
+ifeq ($(UNAME_S),Linux)
+	LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+endif
+ifeq ($(UNAME_S),Darwin)
+	LIBS = -lm -lpthread -ldl -framework IOKit -framework Cocoa -framework OpenGL `pkg-config --libs --cflags raylib`
+endif
 
 MAINSRC=$(wildcard src/main.cpp lib/imgui/*.cpp lib/rlImGui/*.cpp)
 OBJ=$(addsuffix .o,$(basename $(MAINSRC)))
