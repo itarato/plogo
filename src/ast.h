@@ -1,9 +1,8 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <utility>
