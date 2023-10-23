@@ -26,7 +26,7 @@ enum class LexemeKind {
 };
 
 int precedence(string s) {
-  if (s == "<" || s == ">") {
+  if (s == "<" || s == ">" || s == "<=" || s == ">=" || s == "==") {
     return 3;
   } else if (s == "+" || s == "-") {
     return 2;
@@ -102,6 +102,8 @@ struct Lexer {
         } else {
           lexemes.push_back(Lexeme(LexemeKind::Assignment));
         }
+      } else if (c == '#') {
+        readWhile([](char c) -> bool { return c != '\n'; });
       } else {
         THROW("Unknown character in lexing: %c", c);
       }

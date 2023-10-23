@@ -25,7 +25,8 @@ using namespace std;
 const vector<string> builtInFunctions{
     "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
     "down [d]",    "pos [p]",      "angle [a]", "thickness [t]", "rand",
-    "clear [c]",   "intvar",       "getx",      "gety",          "getangle"};
+    "clear [c]",   "intvar",       "floatvar",  "getx",          "gety",
+    "getangle",    "debug"};
 
 struct App {
   TextInput textInput{};

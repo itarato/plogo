@@ -339,6 +339,11 @@ struct FnCallNode : Expr {
       v = Value(vm->pos.y);
     } else if (fnName == "getangle") {
       v = Value(vm->angle);
+    } else if (fnName == "debug") {
+      for (auto &arg : args) {
+        arg->execute(vm);
+        arg->value().debug();
+      }
     } else {
       if (!vm->functions.contains(fnName)) {
         THROW("Unrecognized function name: %s", fnName.c_str());

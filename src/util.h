@@ -9,6 +9,7 @@
 
 #define INFO(...) log("\x1b[90mINFO\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define WARN(...) log("\x1b[93mWARN\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
+#define DEBUG(...) log("\x1b[94mDEBG\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 
 #define THROW(...) throw_runtime_error(__VA_ARGS__)
 

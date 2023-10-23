@@ -47,6 +47,23 @@ struct Value {
     return *this;
   }
 
+  void debug() const {
+    switch (kind) {
+      case ValueKind::Boolean:
+        DEBUG("%b", boolVal);
+        break;
+      case ValueKind::Number:
+        DEBUG("%f", floatVal);
+        break;
+      case ValueKind::String:
+        DEBUG("%s", strVal.c_str());
+        break;
+      default:
+        DEBUG("NULL");
+        break;
+    };
+  }
+
   Value(const Value &other) { *this = other; }
 
   ~Value() {
