@@ -51,6 +51,7 @@ struct VM {
 
   unordered_map<string, IntVar> intVars{};
   unordered_map<string, FloatVar> floatVars{};
+  vector<Value> stack{};
 
   VM() { frames.emplace_back(); }
 
@@ -73,6 +74,7 @@ struct VM {
     functions.clear();
     intVars.clear();
     floatVars.clear();
+    stack.clear();
 
     angle = 0.0f;
     isDown = true;

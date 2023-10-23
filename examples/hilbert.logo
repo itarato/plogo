@@ -1,0 +1,95 @@
+fn hilb(x, y, size, limit, angle) {
+  if (size > limit) {
+    pos(x, y)
+    a(angle)
+    up()
+    b(size * 0.5)
+    l(90)
+    f(size * 0.5)
+    down()
+    hilb(getx(), gety(), size / 2, limit, angle + 90)
+
+    aey = pop()
+    aex = pop()
+    asy = pop()
+    asx = pop()
+
+    pos(x, y)
+    a(angle)
+    up()
+    f(size * 0.5)
+    l(90)
+    f(size * 0.5)
+    down()
+    hilb(getx(), gety(), size / 2, limit, angle)
+
+    bey = pop()
+    bex = pop()
+    bsy = pop()
+    bsx = pop()
+
+    pos(x, y)
+    a(angle)
+    up()
+    f(size * 0.5)
+    r(90)
+    f(size * 0.5)
+    down()
+    hilb(getx(), gety(), size / 2, limit, angle)
+
+    cey = pop()
+    cex = pop()
+    csy = pop()
+    csx = pop()
+
+    pos(x, y)
+    a(angle)
+    up()
+    b(size * 0.5)
+    r(90)
+    f(size * 0.5)
+    down()
+    hilb(getx(), gety(), size / 2, limit, angle - 90)
+
+    dey = pop()
+    dex = pop()
+    dsy = pop()
+    dsx = pop()
+
+    line(asx, asy, bsx, bsy)
+    line(bex, bey, csx, csy)
+    line(cex, cey, dex, dey)
+
+    push(aex)
+    push(aey)
+    push(dsx)
+    push(dsy)
+  } else {
+    pos(x, y)
+    angle(angle)
+    up()
+    b(size * 0.5)
+    l(90)
+    f(size * 0.5)
+    r(90)
+    down()
+
+    push(getx())
+    push(gety())
+
+    loop(3) {
+      f(size)
+      r(90)
+    }
+
+    push(getx())
+    push(gety())
+  }
+}
+
+intvar("midx", 0, 1000, midx())
+intvar("midy", 0, 1000, midy())
+intvar("size", 1, 1000, 300)
+intvar("limit", 1, 1000, 10)
+
+hilb(midx, midy, size, limit, 0)

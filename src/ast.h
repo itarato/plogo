@@ -337,6 +337,12 @@ struct FnCallNode : Expr {
     } else if (fnName == "gety") {
       assert_or_throw(args.size() == 0, "Expected 0 args");
       v = Value(vm->pos.y);
+    } else if (fnName == "midx") {
+      assert_or_throw(args.size() == 0, "Expected 0 args");
+      v = Value((float)(GetScreenWidth() >> 1));
+    } else if (fnName == "midy") {
+      assert_or_throw(args.size() == 0, "Expected 0 args");
+      v = Value((float)(GetScreenHeight() >> 1));
     } else if (fnName == "getangle") {
       v = Value(vm->angle);
     } else if (fnName == "debug") {
@@ -344,6 +350,30 @@ struct FnCallNode : Expr {
         arg->execute(vm);
         arg->value().debug();
       }
+    } else if (fnName == "push") {
+      for (auto &arg : args) {
+        vm->stack.push_back(arg->value());
+      }
+    } else if (fnName == "pop") {
+      assert_or_throw(args.size() == 0, "Expected 0 args");
+      assert_or_throw(!vm->stack.empty(), "Empty stack on pop");
+
+      v = vm->stack.back();
+      vm->stack.pop_back();
+    } else if (fnName == "line") {
+      assert_or_throw(args.size() == 4, "Expected 4 args");
+      assert_or_throw(args[0]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[1]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[2]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      assert_or_throw(args[3]->value().kind == ValueKind::Number,
+                      "intvar expects a number arg");
+      vm->history.emplace_back(
+          Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
+          Vector2{args[2]->value().floatVal, args[3]->value().floatVal},
+          vm->thickness, vm->color);
     } else {
       if (!vm->functions.contains(fnName)) {
         THROW("Unrecognized function name: %s", fnName.c_str());
