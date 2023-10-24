@@ -63,7 +63,7 @@ struct Lexer {
       if (isEnd()) break;
 
       char c = peek();
-      if (isalpha(c)) {
+      if (isalpha(c) || c == '_') {
         lexemes.push_back(readWord());
       } else if (isdigit(c)) {
         lexemes.push_back(readNumber());
@@ -113,7 +113,8 @@ struct Lexer {
   }
 
   Lexeme readWord() {
-    string word = readWhile([](char c) -> bool { return isalpha(c); });
+    string word =
+        readWhile([](char c) -> bool { return isalnum(c) || c == '_'; });
     auto it = find(keywords.begin(), keywords.end(), word);
     if (it == keywords.end()) {
       return Lexeme(LexemeKind::Name, word);

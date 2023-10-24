@@ -164,6 +164,8 @@ struct LoopNode : Node {
 
     unsigned int iter = (unsigned int)count->value().floatVal;
     for (unsigned int i = 0; i < iter; i++) {
+      vm->frames.back().variables["_i"] = Value((float)i);
+
       for (auto &statement : statements) {
         statement->execute(vm);
       }

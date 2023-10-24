@@ -144,6 +144,8 @@ int main() {
                                           {LexemeKind::Op, "=="},
                                       });
 
+  test_tokens("__abc_1", {{LexemeKind::Name, "__abc_1"}});
+
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");
     ASSERT(eqf(vm->pos.x, 0.0), "x is 0.0");
