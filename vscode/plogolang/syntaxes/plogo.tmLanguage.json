@@ -9,6 +9,9 @@
 			"include": "#strings"
 		},
 		{
+			"include": "#names"
+		},
+		{
 			"include": "#numbers"
 		},
 		{
@@ -29,6 +32,10 @@
 			"begin": "\"",
 			"end": "\"",
 			"patterns": []
+		},
+		"names": {
+			"name": "entity.name.plogo",
+			"match": "\\b[_a-z][_a-z0-9]*"
 		},
 		"numbers": {
 			"name": "keyword.other.unit.plogo",

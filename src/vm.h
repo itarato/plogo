@@ -20,6 +20,7 @@ struct ExecutableFnNode;
 
 struct Frame {
   unordered_map<string, Value> variables{};
+  int loopCount{0};
 };
 
 struct Line {

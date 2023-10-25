@@ -2,5 +2,5 @@ gap = 3
 iter = 500
 
 loop (iter) {
-    line(0, _i * gap, iter * gap - _i * gap, 0)
+    line(0, _i0 * gap, iter * gap - _i0 * gap, 0)
 }
