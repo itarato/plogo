@@ -1,9 +1,12 @@
 #pragma once
 
 #include <chrono>
+#include <condition_variable>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <optional>
+#include <thread>
 #include <vector>
 
 #include "ast.h"
@@ -42,6 +45,13 @@ struct App {
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
+  RenderTexture2D canvas;
+
+  condition_variable condvarNeedParse;
+  mutex mutexSourceCode;
+  vector<string> sourceCodes{};
+  atomic_bool needExit{false};
+
   App() {}
   App(const App &) = delete;
   App(App &&) = delete;
@@ -51,11 +61,12 @@ struct App {
     SetConfigFlags(win_flags);
 
     InitWindow(config.win_w, config.win_h, "P-Logo V(0)");
-    SetTargetFPS(24);
+    SetTargetFPS(120);
 
     rlImGuiSetup(true);
 
     textInput.init();
+    canvas = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
     reset();
   }
@@ -72,7 +83,10 @@ struct App {
 
     sourceFileUpdateTime = getSourceFileUpdateTime();
 
+    lock_guard<mutex> lock(mutexSourceCode);
+
     vm.reset();
+    canvas = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
     vm.pos.x = vstartx;
     vm.pos.y = vstarty;
@@ -81,13 +95,32 @@ struct App {
     std::string fileContent;
     std::getline(std::ifstream(sourceFileName), fileContent, '\0');
 
-    try {
-      runLogo(fileContent, &vm);
-    } catch (runtime_error &e) {
-      WARN("Compile error: %s", e.what());
-    }
+    sourceCodes.push_back(fileContent);
+    condvarNeedParse.notify_one();
 
     needScriptReload = false;
+  }
+
+  void sourceCodeInterpreterThread() {
+    while (!needExit.load()) {
+      INFO("THREAD LOOP");
+
+      unique_lock<mutex> lock(mutexSourceCode);
+      condvarNeedParse.wait(
+          lock, [this] { return !sourceCodes.empty() || needExit.load(); });
+
+      INFO("THREAD WAKE ");
+
+      while (!sourceCodes.empty()) {
+        auto fileContent = sourceCodes.back();
+        sourceCodes.pop_back();
+        try {
+          runLogo(fileContent, &vm);
+        } catch (runtime_error &e) {
+          WARN("Compile error: %s", e.what());
+        }
+      }
+    }
   }
 
   void reset() {
@@ -98,6 +131,8 @@ struct App {
   }
 
   void run() {
+    thread parserThread([this] { sourceCodeInterpreterThread(); });
+
     while (!WindowShouldClose()) {
       update();
 
@@ -110,6 +145,13 @@ struct App {
 
       EndDrawing();
     }
+
+    needExit = true;
+
+    INFO("EVENT LOOP ENDED %b", WindowShouldClose());
+
+    condvarNeedParse.notify_one();
+    parserThread.join();
 
     rlImGuiShutdown();
 
@@ -131,10 +173,22 @@ struct App {
     auto command = textInput.update();
     if (command.has_value()) {
       try {
-        runLogo(command.value(), &vm);
+        thread t([&]() { runLogo(command.value(), &vm); });
+        t.join();
       } catch (runtime_error &e) {
         WARN("Compile error: %s", e.what());
       }
+    }
+
+    if (!vm.history.empty()) {
+      BeginTextureMode(canvas);
+      for (auto &line : vm.history) {
+        DrawLineEx(line.from, line.to, line.thickness, line.color);
+        // DrawLine(line.from.x, line.from.y, line.to.x, line.to.y, BLACK);
+      }
+      EndTextureMode();
+
+      vm.history.clear();
     }
   }
 
@@ -253,8 +307,6 @@ struct App {
 
   void draw() const {
     DrawFPS(GetScreenWidth() - 100, 4);
-    DrawText(TextFormat("Line count: %d", vm.history.size()),
-             GetScreenWidth() - 100, 28, 10, BLACK);
 
     textInput.draw();
 
@@ -267,8 +319,10 @@ struct App {
         Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
     DrawTriangle(p1, p2, p3, GREEN);
 
-    for (auto &line : vm.history) {
-      DrawLineEx(line.from, line.to, line.thickness, line.color);
-    }
+    DrawTexture(canvas.texture, 0, 0, WHITE);
+    // DrawTextureRec(canvas.texture,
+    //                (Rectangle){0, 0, (float)canvas.texture.width,
+    //                            (float)-canvas.texture.height},
+    //                (Vector2){0, 0}, WHITE);
   }
 };
