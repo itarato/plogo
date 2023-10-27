@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <mutex>
 #include <numbers>
 #include <string>
 #include <unordered_map>
@@ -58,16 +59,16 @@ struct VM {
   unordered_map<string, FloatVar> floatVars{};
   vector<Value> stack{};
 
+  mutex executionMutex;
+
   VM() { frames.emplace_back(); }
 
-  void hardReset() {
-    frames.clear();
-    frames.emplace_back();
+  void reset(bool withHardReset = false) {
+    if (withHardReset) {
+      frames.clear();
+      frames.emplace_back();
+    }
 
-    reset();
-  }
-
-  void reset() {
     // Leave base frame.
     // Risk: base frame is always kept as is - assuming that initialization of a
     // used variable must happen always. As well this keeps preset variables the

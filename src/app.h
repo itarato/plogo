@@ -21,6 +21,7 @@ using namespace std;
 
 #define INTVARLIMIT 32
 #define FLOATVARLIMIT 32
+#define WITH_HARD_RESET true
 
 const vector<string> builtInFunctions{
     "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
@@ -42,6 +43,9 @@ struct App {
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
+  int intVarBackend[INTVARLIMIT];
+  float floatVarBackend[FLOATVARLIMIT];
+
   App() {}
   App(const App &) = delete;
   App(App &&) = delete;
@@ -57,7 +61,12 @@ struct App {
 
     textInput.init();
 
-    reset();
+    {  // VM MUTATION. This is pre-event-loop. Fine to not lock.
+      vm.reset();
+    }
+    vstartx = GetScreenWidth() >> 1;
+    vstarty = GetScreenHeight() >> 1;
+    vstartangle = 0;
   }
 
   void setSourceFile(char *fileName) {
@@ -65,36 +74,58 @@ struct App {
     scriptReload();
   }
 
-  void scriptReload() {
+  void scriptReload(bool withHardReset = false) {
     if (sourceFileName == nullptr) return;
 
-    INFO("Reloading script: %s", sourceFileName);
+    if (vm.executionMutex.try_lock()) {
+      INFO("Reloading script: %s", sourceFileName);
 
-    sourceFileUpdateTime = getSourceFileUpdateTime();
+      sourceFileUpdateTime = getSourceFileUpdateTime();
 
-    vm.reset();
+      {  // VM MUTATION. Guarded by exec-mutex.
+        int i = 0;
+        for (auto &[k, v] : vm.intVars) {
+          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+          i++;
+        }
 
-    vm.pos.x = vstartx;
-    vm.pos.y = vstarty;
-    vm.angle = vstartangle;
+        int j = 0;
+        for (auto &[k, v] : vm.floatVars) {
+          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+          j++;
+        }
 
-    std::string fileContent;
-    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
+        vm.reset(withHardReset);
+        vm.pos.x = vstartx;
+        vm.pos.y = vstarty;
+        vm.angle = vstartangle;
+      }
 
-    try {
-      runLogo(fileContent, &vm);
-    } catch (runtime_error &e) {
-      WARN("Compile error: %s", e.what());
+      std::string fileContent;
+      std::getline(std::ifstream(sourceFileName), fileContent, '\0');
+
+      try {
+        runLogo(fileContent, &vm);
+      } catch (runtime_error &e) {
+        WARN("Compile error: %s", e.what());
+      }
+
+      int i = 0;
+      for (auto &[k, v] : vm.intVars) {
+        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+        i++;
+      }
+
+      int j = 0;
+      for (auto &[k, v] : vm.floatVars) {
+        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
+        j++;
+      }
+
+      needScriptReload = false;
+
+      vm.executionMutex.unlock();
     }
-
-    needScriptReload = false;
-  }
-
-  void reset() {
-    vm.reset();
-    vstartx = GetScreenWidth() >> 1;
-    vstarty = GetScreenHeight() >> 1;
-    vstartangle = 0;
   }
 
   void run() {
@@ -120,7 +151,6 @@ struct App {
     if (IsMouseButtonPressed(1)) {
       vstartx = GetMousePosition().x;
       vstarty = GetMousePosition().y;
-      vm.setPos(GetMousePosition().x, GetMousePosition().y);
       needScriptReload = true;
     }
 
@@ -131,7 +161,9 @@ struct App {
     auto command = textInput.update();
     if (command.has_value()) {
       try {
+        vm.executionMutex.lock();
         runLogo(command.value(), &vm);
+        vm.executionMutex.unlock();
       } catch (runtime_error &e) {
         WARN("Compile error: %s", e.what());
       }
@@ -142,10 +174,7 @@ struct App {
     if (sourceFileName == nullptr) return;
 
     auto currentTime = getSourceFileUpdateTime();
-    if (currentTime != sourceFileUpdateTime) {
-      vm.hardReset();
-      scriptReload();
-    }
+    if (currentTime != sourceFileUpdateTime) scriptReload(WITH_HARD_RESET);
   }
 
   chrono::time_point<chrono::file_clock> getSourceFileUpdateTime() {
@@ -172,37 +201,25 @@ struct App {
       int prevVstarty{vstarty};
       int prevVstartangle{vstartangle};
 
-      int intVarBackend[INTVARLIMIT];
       assert(vm.intVars.size() < INTVARLIMIT);
-      float floatVarBackend[FLOATVARLIMIT];
       assert(vm.floatVars.size() < FLOATVARLIMIT);
 
       int i = 0;
       for (auto &[k, v] : vm.intVars) {
-        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
-
         bool changed =
             ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
-        if (changed) {
-          didChange = true;
-          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
-        }
+        if (changed) didChange = true;
 
         i++;
       }
 
       int j = 0;
       for (auto &[k, v] : vm.floatVars) {
-        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
-
         bool changed =
             ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
 
-        if (changed) {
-          didChange = true;
-          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
-        }
+        if (changed) didChange = true;
 
         j++;
       }
