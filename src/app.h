@@ -23,6 +23,10 @@ using namespace std;
 #define FLOATVARLIMIT 32
 #define WITH_HARD_RESET true
 
+#define SCRIPT_RELOAD_NO 0
+#define SCRIPT_RELOAD_SOFT 1
+#define SCRIPT_RELOAD_HARD 2
+
 const vector<string> builtInFunctions{
     "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
     "down [d]",    "pos [p]",      "angle [a]", "thickness [t]", "rand",
@@ -38,7 +42,7 @@ struct App {
   int vstarty{0};
   int vstartangle{0};
 
-  bool needScriptReload{false};
+  int needScriptReload{SCRIPT_RELOAD_NO};
 
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
@@ -71,10 +75,10 @@ struct App {
 
   void setSourceFile(char *fileName) {
     sourceFileName = fileName;
-    scriptReload();
+    needScriptReload = SCRIPT_RELOAD_SOFT;
   }
 
-  void scriptReload(bool withHardReset = false) {
+  void scriptReload() {
     if (sourceFileName == nullptr) return;
 
     if (vm.executionMutex.try_lock()) {
@@ -95,7 +99,7 @@ struct App {
           j++;
         }
 
-        vm.reset(withHardReset);
+        vm.reset(needScriptReload >= SCRIPT_RELOAD_HARD);
         vm.pos.x = vstartx;
         vm.pos.y = vstarty;
         vm.angle = vstartangle;
@@ -122,7 +126,7 @@ struct App {
         j++;
       }
 
-      needScriptReload = false;
+      needScriptReload = SCRIPT_RELOAD_NO;
 
       vm.executionMutex.unlock();
     }
@@ -151,12 +155,12 @@ struct App {
     if (IsMouseButtonPressed(1)) {
       vstartx = GetMousePosition().x;
       vstarty = GetMousePosition().y;
-      needScriptReload = true;
+      needScriptReload = SCRIPT_RELOAD_SOFT;
     }
 
     checkSourceForUpdates();
 
-    if (needScriptReload) scriptReload();
+    if (needScriptReload > SCRIPT_RELOAD_NO) scriptReload();
 
     auto command = textInput.update();
     if (command.has_value()) {
@@ -174,7 +178,9 @@ struct App {
     if (sourceFileName == nullptr) return;
 
     auto currentTime = getSourceFileUpdateTime();
-    if (currentTime != sourceFileUpdateTime) scriptReload(WITH_HARD_RESET);
+    if (currentTime != sourceFileUpdateTime) {
+      needScriptReload = SCRIPT_RELOAD_HARD;
+    }
   }
 
   chrono::time_point<chrono::file_clock> getSourceFileUpdateTime() {
@@ -230,9 +236,11 @@ struct App {
       ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
       ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
 
-      needScriptReload = didChange || vstartx != prevVstartx ||
-                         vstarty != prevVstarty ||
-                         vstartangle != prevVstartangle;
+      if (needScriptReload == SCRIPT_RELOAD_NO &&
+          (didChange || vstartx != prevVstartx || vstarty != prevVstarty ||
+           vstartangle != prevVstartangle)) {
+        needScriptReload = SCRIPT_RELOAD_SOFT;
+      }
     }
   }
 
