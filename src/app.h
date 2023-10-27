@@ -45,7 +45,7 @@ struct App {
   int needScriptReload{SCRIPT_RELOAD_NO};
 
   char *sourceFileName{nullptr};
-  chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
+  chrono::time_point<chrono::file_clock> sourceFileUpdateTime{};
 
   int intVarBackend[INTVARLIMIT];
   float floatVarBackend[FLOATVARLIMIT];
@@ -73,63 +73,56 @@ struct App {
     vstartangle = 0;
   }
 
-  void setSourceFile(char *fileName) {
-    sourceFileName = fileName;
-    needScriptReload = SCRIPT_RELOAD_SOFT;
-  }
+  void setSourceFile(char *fileName) { sourceFileName = fileName; }
 
   void scriptReload() {
     if (sourceFileName == nullptr) return;
 
-    if (vm.executionMutex.try_lock()) {
-      INFO("Reloading script: %s", sourceFileName);
+    INFO("Reloading script: %s", sourceFileName);
 
-      sourceFileUpdateTime = getSourceFileUpdateTime();
+    sourceFileUpdateTime = getSourceFileUpdateTime();
 
-      {  // VM MUTATION. Guarded by exec-mutex.
-        int i = 0;
-        for (auto &[k, v] : vm.intVars) {
-          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
-          i++;
-        }
-
-        int j = 0;
-        for (auto &[k, v] : vm.floatVars) {
-          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
-          j++;
-        }
-
-        vm.reset(needScriptReload >= SCRIPT_RELOAD_HARD);
-        vm.pos.x = vstartx;
-        vm.pos.y = vstarty;
-        vm.angle = vstartangle;
-      }
-
-      std::string fileContent;
-      std::getline(std::ifstream(sourceFileName), fileContent, '\0');
-
-      try {
-        runLogo(fileContent, &vm);
-      } catch (runtime_error &e) {
-        WARN("Compile error: %s", e.what());
-      }
-
+    {  // VM MUTATION. Guarded by exec-mutex.
       int i = 0;
       for (auto &[k, v] : vm.intVars) {
-        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+        vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
         i++;
       }
 
       int j = 0;
       for (auto &[k, v] : vm.floatVars) {
-        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
+        vm.frames.front().variables[k].floatVal = floatVarBackend[j];
         j++;
       }
 
-      needScriptReload = SCRIPT_RELOAD_NO;
-
-      vm.executionMutex.unlock();
+      vm.reset(needScriptReload >= SCRIPT_RELOAD_HARD);
+      vm.pos.x = vstartx;
+      vm.pos.y = vstarty;
+      vm.angle = vstartangle;
     }
+
+    std::string fileContent;
+    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
+
+    try {
+      runLogo(fileContent, &vm);
+    } catch (runtime_error &e) {
+      WARN("Compile error: %s", e.what());
+    }
+
+    int i = 0;
+    for (auto &[k, v] : vm.intVars) {
+      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+      i++;
+    }
+
+    int j = 0;
+    for (auto &[k, v] : vm.floatVars) {
+      floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
+      j++;
+    }
+
+    needScriptReload = SCRIPT_RELOAD_NO;
   }
 
   void run() {
@@ -165,9 +158,7 @@ struct App {
     auto command = textInput.update();
     if (command.has_value()) {
       try {
-        vm.executionMutex.lock();
         runLogo(command.value(), &vm);
-        vm.executionMutex.unlock();
       } catch (runtime_error &e) {
         WARN("Compile error: %s", e.what());
       }

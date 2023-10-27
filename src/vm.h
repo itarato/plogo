@@ -59,8 +59,6 @@ struct VM {
   unordered_map<string, FloatVar> floatVars{};
   vector<Value> stack{};
 
-  mutex executionMutex;
-
   VM() { frames.emplace_back(); }
 
   void reset(bool withHardReset = false) {
