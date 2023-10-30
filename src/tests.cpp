@@ -84,7 +84,7 @@ void test_vm_raise(string code) {
   }
 }
 
-void test_concurrent_queue() {
+void test_concurrent_deque() {
   ConcurrentDeque<int> cq{};
 
   const int iter = 1000;
@@ -230,7 +230,7 @@ int main() {
   test_vm_raise("forward(1 < 2)");
   test_vm_raise("forward(2 + \"few\")");
 
-  test_concurrent_queue();
+  test_concurrent_deque();
 
   if (failCount == 0) {
     PASS("all");

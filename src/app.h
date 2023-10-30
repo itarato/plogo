@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ast.h"
+#include "concurrent_deque.h"
 #include "config.h"
 #include "imgui.h"
 #include "logo.h"
@@ -34,6 +35,11 @@ const vector<string> builtInFunctions{
     "getangle",    "push",         "pop",       "line",          "midx",
     "midy",        "debug"};
 
+struct Task {
+  string code;
+  int level;
+};
+
 struct App {
   TextInput textInput{};
   VM vm{};
@@ -51,6 +57,8 @@ struct App {
   float floatVarBackend[FLOATVARLIMIT];
 
   vector<Line> history{};
+
+  ConcurrentDeque<Task> tasks{};
 
   App() {}
   App(const App &) = delete;
