@@ -98,6 +98,7 @@ struct App {
       }
 
       vm.reset(needScriptReload >= SCRIPT_RELOAD_HARD);
+      history.clear();
       vm.pos.x = vstartx;
       vm.pos.y = vstarty;
       vm.angle = vstartangle;
