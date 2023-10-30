@@ -1,7 +1,10 @@
+#include <chrono>
 #include <iostream>
+#include <thread>
 #include <utility>
 
 #include "ast.h"
+#include "concurrent_queue.h"
 #include "lexer.h"
 #include "parser.h"
 #include "util.h"
@@ -79,6 +82,33 @@ void test_vm_raise(string code) {
   if (!gotRaise) {
     FAIL("Code: \"%s\" did not raise the expected exception", code.c_str());
   }
+}
+
+void test_concurrent_queue() {
+  ConcurrentQueue<int> cq{};
+
+  const int iter = 1000;
+  int consumerSum = 0;
+
+  thread tConsumer([&] {
+    for (int i = 0; i < iter; i++) {
+      consumerSum += cq.pop();
+    }
+  });
+
+  thread tProducer([&] {
+    for (int i = 0; i < iter; i++) {
+      cq.push(1);
+
+      const auto start = std::chrono::high_resolution_clock::now();
+      std::this_thread::sleep_for(5ms);
+    }
+  });
+
+  tConsumer.join();
+  tProducer.join();
+
+  ASSERT(consumerSum == iter, "Sum is correct");
 }
 
 int main() {
@@ -201,6 +231,8 @@ int main() {
   test_vm_raise("forward(1, 2)");
   test_vm_raise("forward(1 < 2)");
   test_vm_raise("forward(2 + \"few\")");
+
+  test_concurrent_queue();
 
   if (failCount == 0) {
     PASS("all");
