@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "ast.h"
+#include "concurrent_deque.h"
 #include "raylib.h"
 #include "value.h"
 
@@ -45,6 +46,11 @@ struct FloatVar {
 };
 
 struct VM {
+ private:
+  mutex historMutex;
+
+ public:
+  ConcurrentDeque<Line> history{};
   Vector2 pos{};
   float angle = 0.0f;
   bool isDown = true;
@@ -52,7 +58,6 @@ struct VM {
   Color color = BLACK;
 
   vector<Frame> frames{};
-  vector<Line> history{};
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
   unordered_map<string, IntVar> intVars{};
@@ -92,7 +97,7 @@ struct VM {
     pos.x += sinf(rad()) * v;
     pos.y += cosf(rad()) * -v;
 
-    if (isDown) history.emplace_back(prevPos, pos, thickness, color);
+    if (isDown) history.push_back(Line{prevPos, pos, thickness, color});
   }
 
   void backward(float v) { forward(-v); }

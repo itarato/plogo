@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "ast.h"
-#include "concurrent_queue.h"
+#include "concurrent_deque.h"
 #include "lexer.h"
 #include "parser.h"
 #include "util.h"
@@ -85,22 +85,20 @@ void test_vm_raise(string code) {
 }
 
 void test_concurrent_queue() {
-  ConcurrentQueue<int> cq{};
+  ConcurrentDeque<int> cq{};
 
   const int iter = 1000;
   int consumerSum = 0;
 
   thread tConsumer([&] {
     for (int i = 0; i < iter; i++) {
-      consumerSum += cq.pop();
+      consumerSum += cq.pop_front();
     }
   });
 
   thread tProducer([&] {
     for (int i = 0; i < iter; i++) {
-      cq.push(1);
-
-      const auto start = std::chrono::high_resolution_clock::now();
+      cq.push_back(1);
       std::this_thread::sleep_for(5ms);
     }
   });

@@ -50,6 +50,8 @@ struct App {
   int intVarBackend[INTVARLIMIT];
   float floatVarBackend[FLOATVARLIMIT];
 
+  vector<Line> history{};
+
   App() {}
   App(const App &) = delete;
   App(App &&) = delete;
@@ -163,6 +165,8 @@ struct App {
         WARN("Compile error: %s", e.what());
       }
     }
+
+    vm.history.popInto(history);
   }
 
   void checkSourceForUpdates() {
@@ -269,7 +273,7 @@ struct App {
 
   void draw() const {
     DrawFPS(GetScreenWidth() - 100, 4);
-    DrawText(TextFormat("Line count: %d", vm.history.size()),
+    DrawText(TextFormat("Line count: %d", history.size()),
              GetScreenWidth() - 100, 28, 10, BLACK);
 
     textInput.draw();
@@ -283,7 +287,7 @@ struct App {
         Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
     DrawTriangle(p1, p2, p3, GREEN);
 
-    for (auto &line : vm.history) {
+    for (auto &line : history) {
       DrawLineEx(line.from, line.to, line.thickness, line.color);
     }
   }

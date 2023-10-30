@@ -377,10 +377,10 @@ struct FnCallNode : Expr {
                       "intvar expects a number arg");
       assert_or_throw(args[3]->value().kind == ValueKind::Number,
                       "intvar expects a number arg");
-      vm->history.emplace_back(
-          Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
-          Vector2{args[2]->value().floatVal, args[3]->value().floatVal},
-          vm->thickness, vm->color);
+      vm->history.push_back(
+          Line{Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
+               Vector2{args[2]->value().floatVal, args[3]->value().floatVal},
+               vm->thickness, vm->color});
     } else {
       if (!vm->functions.contains(fnName)) {
         THROW("Unrecognized function name: %s", fnName.c_str());
