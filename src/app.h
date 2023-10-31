@@ -1,8 +1,10 @@
 #pragma once
 
 #include <chrono>
+#include <condition_variable>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <optional>
 #include <vector>
 
@@ -24,6 +26,7 @@ using namespace std;
 #define FLOATVARLIMIT 32
 #define WITH_HARD_RESET true
 
+#define SCRIPT_RELOAD_EXIT -1
 #define SCRIPT_RELOAD_NO 0
 #define SCRIPT_RELOAD_SOFT 1
 #define SCRIPT_RELOAD_HARD 2
@@ -59,6 +62,7 @@ struct App {
   vector<Line> history{};
 
   ConcurrentDeque<Task> tasks{};
+  condition_variable appShouldQuitCondVar;
 
   App() {}
   App(const App &) = delete;
@@ -92,51 +96,64 @@ struct App {
 
     sourceFileUpdateTime = getSourceFileUpdateTime();
 
-    {  // VM MUTATION. Guarded by exec-mutex.
+    std::string fileContent;
+    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
+
+    tasks.clear();
+    tasks.push_back(Task{fileContent, needScriptReload});
+
+    needScriptReload = SCRIPT_RELOAD_NO;
+  }
+
+  void recompileThread() {
+    while (true) {
+      auto task = tasks.pop_front();
+
+      if (task.level == SCRIPT_RELOAD_EXIT) break;
+
+      {  // VM MUTATION. Guarded by exec-mutex.
+        int i = 0;
+        for (auto &[k, v] : vm.intVars) {
+          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+          i++;
+        }
+
+        int j = 0;
+        for (auto &[k, v] : vm.floatVars) {
+          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+          j++;
+        }
+
+        vm.reset(task.level >= SCRIPT_RELOAD_HARD);
+        history.clear();
+        vm.pos.x = vstartx;
+        vm.pos.y = vstarty;
+        vm.angle = vstartangle;
+      }
+
+      try {
+        runLogo(task.code, &vm);
+      } catch (runtime_error &e) {
+        WARN("Compile error: %s", e.what());
+      }
+
       int i = 0;
       for (auto &[k, v] : vm.intVars) {
-        vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
         i++;
       }
 
       int j = 0;
       for (auto &[k, v] : vm.floatVars) {
-        vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
         j++;
       }
-
-      vm.reset(needScriptReload >= SCRIPT_RELOAD_HARD);
-      history.clear();
-      vm.pos.x = vstartx;
-      vm.pos.y = vstarty;
-      vm.angle = vstartangle;
     }
-
-    std::string fileContent;
-    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
-
-    try {
-      runLogo(fileContent, &vm);
-    } catch (runtime_error &e) {
-      WARN("Compile error: %s", e.what());
-    }
-
-    int i = 0;
-    for (auto &[k, v] : vm.intVars) {
-      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
-      i++;
-    }
-
-    int j = 0;
-    for (auto &[k, v] : vm.floatVars) {
-      floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
-      j++;
-    }
-
-    needScriptReload = SCRIPT_RELOAD_NO;
   }
 
   void run() {
+    thread compileThread([this] { recompileThread(); });
+
     while (!WindowShouldClose()) {
       update();
 
@@ -149,6 +166,11 @@ struct App {
 
       EndDrawing();
     }
+
+    tasks.clear();
+    tasks.push_back(Task{"", SCRIPT_RELOAD_EXIT});
+
+    compileThread.join();
 
     rlImGuiShutdown();
 
