@@ -46,9 +46,11 @@ struct VM {
   float thickness = 1.0;
   Color color = BLACK;
   std::mutex mutex{};
+  std::mutex readHistoryMutex{};
 
   vector<Frame> frames{};
-  vector<Line> history{};
+  vector<Line> write_history{};  // Populating at VM exexution.
+  vector<Line> read_history{};   // For UI drawer to read.
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
   unordered_map<string, IntVar> intVars{};
@@ -74,7 +76,8 @@ struct VM {
     while (frames.size() > 1) frames.pop_back();
     assert(frames.size() == 1);
 
-    history.clear();
+    read_history.clear();
+    write_history.clear();
     functions.clear();
     intVars.clear();
     floatVars.clear();
@@ -93,7 +96,13 @@ struct VM {
     pos.y += cosf(rad()) * -v;
 
     if (isDown) {
-      history.emplace_back(prevPos, pos, thickness, color);
+      write_history.emplace_back(prevPos, pos, thickness, color);
+      if (write_history.size() >= 1000) {
+        readHistoryMutex.lock();
+        std::copy(write_history.begin(), write_history.end(), std::back_inserter(read_history));
+        write_history.clear();
+        readHistoryMutex.unlock();
+      }
     }
   }
 

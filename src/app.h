@@ -294,7 +294,7 @@ struct App {
   void draw() {
     DrawFPS(GetScreenWidth() - 100, 4);
     if (vm.mutex.try_lock()) {
-      DrawText(TextFormat("Line count: %d", vm.history.size()), GetScreenWidth() - 100, 28, 10, BLACK);
+      DrawText(TextFormat("Line count: %d", vm.read_history.size()), GetScreenWidth() - 100, 28, 10, BLACK);
       vm.mutex.unlock();
     }
 
@@ -307,10 +307,13 @@ struct App {
       Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
       DrawTriangle(p1, p2, p3, GREEN);
 
-      for (auto &line : vm.history) {
-        DrawLineEx(line.from, line.to, line.thickness, line.color);
-      }
       vm.mutex.unlock();
     }
+
+    vm.readHistoryMutex.lock();
+    for (auto &line : vm.read_history) {
+      DrawLineEx(line.from, line.to, line.thickness, line.color);
+    }
+    vm.readHistoryMutex.unlock();
   }
 };
