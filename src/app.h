@@ -23,11 +23,9 @@ using namespace std;
 #define FLOATVARLIMIT 32
 
 const vector<string> builtInFunctions{
-    "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
-    "down [d]",    "pos [p]",      "angle [a]", "thickness [t]", "rand",
-    "clear [c]",   "intvar",       "floatvar",  "getx",          "gety",
-    "getangle",    "push",         "pop",       "line",          "midx",
-    "midy",        "debug"};
+    "forward [f]",   "backward [b]", "left [l]",  "right [r]", "up [u]",   "down [d]", "pos [p]", "angle [a]",
+    "thickness [t]", "rand",         "clear [c]", "intvar",    "floatvar", "getx",     "gety",    "getangle",
+    "push",          "pop",          "line",      "midx",      "midy",     "debug"};
 
 struct App {
   TextInput textInput{};
@@ -42,7 +40,8 @@ struct App {
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
-  App() {}
+  App() {
+  }
   App(const App &) = delete;
   App(App &&) = delete;
 
@@ -181,8 +180,7 @@ struct App {
       for (auto &[k, v] : vm.intVars) {
         intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
 
-        bool changed =
-            ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
+        bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
         if (changed) {
           didChange = true;
@@ -196,8 +194,7 @@ struct App {
       for (auto &[k, v] : vm.floatVars) {
         floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
 
-        bool changed =
-            ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
+        bool changed = ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
 
         if (changed) {
           didChange = true;
@@ -213,9 +210,8 @@ struct App {
       ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
       ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
 
-      needScriptReload = didChange || vstartx != prevVstartx ||
-                         vstarty != prevVstarty ||
-                         vstartangle != prevVstartangle;
+      needScriptReload =
+          didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle;
     }
   }
 
@@ -253,22 +249,18 @@ struct App {
 
   void draw() const {
     DrawFPS(GetScreenWidth() - 100, 4);
-    DrawText(TextFormat("Line count: %d", vm.history.size()),
-             GetScreenWidth() - 100, 28, 10, BLACK);
+    DrawText(TextFormat("Line count: %d", vm.history.size()), GetScreenWidth() - 100, 28, 10, BLACK);
 
     textInput.draw();
 
     // Draw turtle (triangle).
-    Vector2 p1 =
-        Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);
-    Vector2 p2 =
-        Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
-    Vector2 p3 =
-        Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
+    Vector2 p1 = Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);
+    Vector2 p2 = Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
+    Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
     DrawTriangle(p1, p2, p3, GREEN);
 
-    for (auto &line : vm.history) {
-      DrawLineEx(line.from, line.to, line.thickness, line.color);
-    }
+    // for (auto &line : vm.history) {
+    //   DrawLineEx(line.from, line.to, line.thickness, line.color);
+    // }
   }
 };

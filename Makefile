@@ -12,7 +12,7 @@ TESTOBJ=$(addsuffix .o,$(basename $(TESTSRC)))
 all: CXXFLAGS += -O0
 all: plogo
 
-debug: CXXFLAGS += -g -O0
+debug: CXXFLAGS += -g -O0 -fno-omit-frame-pointer
 debug: plogo
 
 plogo: $(OBJ)
