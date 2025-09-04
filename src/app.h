@@ -1,9 +1,14 @@
 #pragma once
 
 #include <chrono>
+#include <condition_variable>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <optional>
+#include <queue>
+#include <string>
+#include <thread>
 #include <vector>
 
 #include "ast.h"
@@ -23,15 +28,16 @@ using namespace std;
 #define FLOATVARLIMIT 32
 
 const vector<string> builtInFunctions{
-    "forward [f]", "backward [b]", "left [l]",  "right [r]",     "up [u]",
-    "down [d]",    "pos [p]",      "angle [a]", "thickness [t]", "rand",
-    "clear [c]",   "intvar",       "floatvar",  "getx",          "gety",
-    "getangle",    "push",         "pop",       "line",          "midx",
-    "midy",        "debug"};
+    "forward [f]",   "backward [b]", "left [l]",  "right [r]", "up [u]",   "down [d]", "pos [p]", "angle [a]",
+    "thickness [t]", "rand",         "clear [c]", "intvar",    "floatvar", "getx",     "gety",    "getangle",
+    "push",          "pop",          "line",      "midx",      "midy",     "debug"};
 
 struct App {
   TextInput textInput{};
   VM vm{};
+  std::queue<std::string> programQueue{};
+  std::mutex queueMutex{};
+  std::condition_variable queueCondVar{};
 
   int vstartx{0};
   int vstarty{0};
@@ -42,7 +48,8 @@ struct App {
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
-  App() {}
+  App() {
+  }
   App(const App &) = delete;
   App(App &&) = delete;
 
@@ -72,32 +79,45 @@ struct App {
 
     sourceFileUpdateTime = getSourceFileUpdateTime();
 
-    vm.reset();
-
-    vm.pos.x = vstartx;
-    vm.pos.y = vstarty;
-    vm.angle = vstartangle;
+    {
+      std::lock_guard<std::mutex> vmMutex(vm.mutex);
+      vm.reset();
+      vm.pos.x = vstartx;
+      vm.pos.y = vstarty;
+      vm.angle = vstartangle;
+    }
 
     std::string fileContent;
     std::getline(std::ifstream(sourceFileName), fileContent, '\0');
 
-    try {
-      runLogo(fileContent, &vm);
-    } catch (runtime_error &e) {
-      WARN("Compile error: %s", e.what());
+    // try {
+    {
+      // runLogo(fileContent, &vm);
+      std::unique_lock queue_lock_guard(queueMutex);
+      programQueue.push(fileContent);
+      queueCondVar.notify_one();
     }
+    // } catch (runtime_error &e) {
+    //   WARN("Compile error: %s", e.what());
+    // }
 
     needScriptReload = false;
   }
 
   void reset() {
-    vm.reset();
+    {
+      std::lock_guard<std::mutex> vmMutex(vm.mutex);
+      vm.reset();
+    }
+
     vstartx = GetScreenWidth() >> 1;
     vstarty = GetScreenHeight() >> 1;
     vstartangle = 0;
   }
 
   void run() {
+    std::thread logoThread(runLogoThread, &queueCondVar, &vm, &queueMutex, &programQueue);
+
     while (!WindowShouldClose()) {
       update();
 
@@ -111,6 +131,9 @@ struct App {
       EndDrawing();
     }
 
+    queueCondVar.notify_all();
+    logoThread.join();
+
     rlImGuiShutdown();
 
     CloseWindow();
@@ -118,10 +141,13 @@ struct App {
 
   void update() {
     if (IsMouseButtonPressed(1)) {
-      vstartx = GetMousePosition().x;
-      vstarty = GetMousePosition().y;
-      vm.setPos(GetMousePosition().x, GetMousePosition().y);
-      needScriptReload = true;
+      if (vm.mutex.try_lock()) {
+        vm.setPos(GetMousePosition().x, GetMousePosition().y);
+        vm.mutex.unlock();
+        vstartx = GetMousePosition().x;
+        vstarty = GetMousePosition().y;
+        needScriptReload = true;
+      }
     }
 
     checkSourceForUpdates();
@@ -130,11 +156,15 @@ struct App {
 
     auto command = textInput.update();
     if (command.has_value()) {
-      try {
-        runLogo(command.value(), &vm);
-      } catch (runtime_error &e) {
-        WARN("Compile error: %s", e.what());
+      // try {
+      {
+        // runLogo(command.value(), &vm);
+        std::lock_guard<std::mutex> queue_lock_guard(queueMutex);
+        programQueue.push(command.value());
       }
+      // } catch (runtime_error &e) {
+      //   WARN("Compile error: %s", e.what());
+      // }
     }
   }
 
@@ -143,7 +173,10 @@ struct App {
 
     auto currentTime = getSourceFileUpdateTime();
     if (currentTime != sourceFileUpdateTime) {
-      vm.hardReset();
+      {
+        std::lock_guard<std::mutex> vmMutex(vm.mutex);
+        vm.hardReset();
+      }
       scriptReload();
     }
   }
@@ -172,39 +205,41 @@ struct App {
       int prevVstarty{vstarty};
       int prevVstartangle{vstartangle};
 
-      int intVarBackend[INTVARLIMIT];
-      assert(vm.intVars.size() < INTVARLIMIT);
-      float floatVarBackend[FLOATVARLIMIT];
-      assert(vm.floatVars.size() < FLOATVARLIMIT);
+      if (vm.mutex.try_lock()) {
+        int intVarBackend[INTVARLIMIT];
+        assert(vm.intVars.size() < INTVARLIMIT);
+        float floatVarBackend[FLOATVARLIMIT];
+        assert(vm.floatVars.size() < FLOATVARLIMIT);
 
-      int i = 0;
-      for (auto &[k, v] : vm.intVars) {
-        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+        int i = 0;
+        for (auto &[k, v] : vm.intVars) {
+          intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
 
-        bool changed =
-            ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
+          bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
-        if (changed) {
-          didChange = true;
-          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+          if (changed) {
+            didChange = true;
+            vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+          }
+
+          i++;
         }
 
-        i++;
-      }
+        int j = 0;
+        for (auto &[k, v] : vm.floatVars) {
+          floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
 
-      int j = 0;
-      for (auto &[k, v] : vm.floatVars) {
-        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
+          bool changed = ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
 
-        bool changed =
-            ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
+          if (changed) {
+            didChange = true;
+            vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+          }
 
-        if (changed) {
-          didChange = true;
-          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+          j++;
         }
 
-        j++;
+        vm.mutex.unlock();
       }
 
       ImGui::Separator();
@@ -213,14 +248,13 @@ struct App {
       ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
       ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
 
-      needScriptReload = didChange || vstartx != prevVstartx ||
-                         vstarty != prevVstarty ||
-                         vstartangle != prevVstartangle;
+      needScriptReload =
+          didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle;
     }
   }
 
   void drawToolbarDebug() {
-    if (ImGui::CollapsingHeader("Debug")) {
+    if (ImGui::CollapsingHeader("Debug") && vm.mutex.try_lock()) {
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Root variables:");
       ImGui::BulletText("Position -> x = %.2f y = %.2f", vm.pos.x, vm.pos.y);
       ImGui::BulletText("Angle -> %.2f", vm.angle);
@@ -232,6 +266,8 @@ struct App {
       for (auto &[k, v] : vm.frames.front().variables) {
         ImGui::BulletText("%s = %.2f", k.c_str(), v.floatVal);
       }
+
+      vm.mutex.unlock();
     }
   }
 
@@ -244,31 +280,37 @@ struct App {
 
       ImGui::Separator();
 
-      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
-      for (auto &[k, _v] : vm.functions) {
-        ImGui::BulletText("%s", k.c_str());
+      if (vm.mutex.try_lock()) {
+        ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
+        for (auto &[k, _v] : vm.functions) {
+          ImGui::BulletText("%s", k.c_str());
+        }
+
+        vm.mutex.unlock();
       }
     }
   }
 
-  void draw() const {
+  void draw() {
     DrawFPS(GetScreenWidth() - 100, 4);
-    DrawText(TextFormat("Line count: %d", vm.history.size()),
-             GetScreenWidth() - 100, 28, 10, BLACK);
+    if (vm.mutex.try_lock()) {
+      DrawText(TextFormat("Line count: %d", vm.history.size()), GetScreenWidth() - 100, 28, 10, BLACK);
+      vm.mutex.unlock();
+    }
 
     textInput.draw();
 
     // Draw turtle (triangle).
-    Vector2 p1 =
-        Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);
-    Vector2 p2 =
-        Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
-    Vector2 p3 =
-        Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
-    DrawTriangle(p1, p2, p3, GREEN);
+    if (vm.mutex.try_lock()) {
+      Vector2 p1 = Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);
+      Vector2 p2 = Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
+      Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
+      DrawTriangle(p1, p2, p3, GREEN);
 
-    for (auto &line : vm.history) {
-      DrawLineEx(line.from, line.to, line.thickness, line.color);
+      for (auto &line : vm.history) {
+        DrawLineEx(line.from, line.to, line.thickness, line.color);
+      }
+      vm.mutex.unlock();
     }
   }
 };

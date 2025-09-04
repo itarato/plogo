@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <mutex>
 #include <numbers>
 #include <string>
 #include <unordered_map>
@@ -44,6 +45,7 @@ struct VM {
   bool isDown = true;
   float thickness = 1.0;
   Color color = BLACK;
+  std::mutex mutex{};
 
   vector<Frame> frames{};
   vector<Line> history{};
@@ -53,7 +55,9 @@ struct VM {
   unordered_map<string, FloatVar> floatVars{};
   vector<Value> stack{};
 
-  VM() { frames.emplace_back(); }
+  VM() {
+    frames.emplace_back();
+  }
 
   void hardReset() {
     frames.clear();
@@ -93,20 +97,28 @@ struct VM {
     }
   }
 
-  void backward(float v) { forward(-v); }
+  void backward(float v) {
+    forward(-v);
+  }
 
   void left(float d) {
     angle -= d;
     normalizeAngle();
   }
 
-  void right(float d) { left(-d); }
+  void right(float d) {
+    left(-d);
+  }
 
   void setPos(float x, float y) {
     pos.x = x;
     pos.y = y;
   }
 
-  float rad() const { return (angle / 180.0) * numbers::pi; }
-  void normalizeAngle() { angle = fmod(fmod(angle, 360) + 360.0f, 360); }
+  float rad() const {
+    return (angle / 180.0) * numbers::pi;
+  }
+  void normalizeAngle() {
+    angle = fmod(fmod(angle, 360) + 360.0f, 360);
+  }
 };

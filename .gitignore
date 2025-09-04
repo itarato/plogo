@@ -6,3 +6,4 @@ test_logo
 imgui.ini
 plogo
 test
+lib/rlImGui/*.o
