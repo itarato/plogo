@@ -8,15 +8,13 @@
 #include "value.h"
 #include "vm.h"
 
-#define FAIL(...) \
-  log_and_fail("\x1b[91mFAIL\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
+#define FAIL(...) log_and_fail("\x1b[91mFAIL\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define PASS(...) log("\x1b[92mPASS\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define ASSERT(exp, msg) (exp ? PASS(msg) : FAIL(msg))
 
 static int failCount = 0;
 
-void log_and_fail(const char* level, const char* fileName, int lineNo,
-                  const char* s, ...) {
+void log_and_fail(const char* level, const char* fileName, int lineNo, const char* s, ...) {
   va_list args;
   va_start(args, s);
 
@@ -42,8 +40,7 @@ void test_tokens(string code, vector<pair<LexemeKind, string>> expected) {
       FAIL("Lexeme kind mismatch %d != %d", expected[i].first, lexemes[i].kind);
     }
     if (expected[i].second != lexemes[i].v) {
-      FAIL("Lexeme value mismatch %s != %s", expected[i].second.c_str(),
-           lexemes[i].v.c_str());
+      FAIL("Lexeme value mismatch %s != %s", expected[i].second.c_str(), lexemes[i].v.c_str());
     }
   }
 
@@ -81,6 +78,26 @@ void test_vm_raise(string code) {
   }
 }
 
+// struct TestValueMock {
+//   Value v;
+
+//   TestValueMock(string s) : v(s) {
+//   }
+
+//   Value get() {
+//     return v;
+//   }
+// };
+
+// void test_value() {
+//   string s{"hello"};
+//   TestValueMock tvm{s};
+
+//   auto x = tvm.get();
+
+//   PASS("Value with string works");
+// }
+
 int main() {
   INFO("start");
 
@@ -110,15 +127,12 @@ int main() {
 
   test_tokens("fn circle(iter, size) { f(size) r(360 / iter) }",
               {
-                  {LexemeKind::Keyword, "fn"},  {LexemeKind::Name, "circle"},
-                  {LexemeKind::ParenOpen, ""},  {LexemeKind::Name, "iter"},
-                  {LexemeKind::Comma, ""},      {LexemeKind::Name, "size"},
-                  {LexemeKind::ParenClose, ""}, {LexemeKind::BraceOpen, ""},
-                  {LexemeKind::Name, "f"},      {LexemeKind::ParenOpen, ""},
-                  {LexemeKind::Name, "size"},   {LexemeKind::ParenClose, ""},
-                  {LexemeKind::Name, "r"},      {LexemeKind::ParenOpen, ""},
-                  {LexemeKind::Number, "360"},  {LexemeKind::Op, "/"},
-                  {LexemeKind::Name, "iter"},   {LexemeKind::ParenClose, ""},
+                  {LexemeKind::Keyword, "fn"},  {LexemeKind::Name, "circle"}, {LexemeKind::ParenOpen, ""},
+                  {LexemeKind::Name, "iter"},   {LexemeKind::Comma, ""},      {LexemeKind::Name, "size"},
+                  {LexemeKind::ParenClose, ""}, {LexemeKind::BraceOpen, ""},  {LexemeKind::Name, "f"},
+                  {LexemeKind::ParenOpen, ""},  {LexemeKind::Name, "size"},   {LexemeKind::ParenClose, ""},
+                  {LexemeKind::Name, "r"},      {LexemeKind::ParenOpen, ""},  {LexemeKind::Number, "360"},
+                  {LexemeKind::Op, "/"},        {LexemeKind::Name, "iter"},   {LexemeKind::ParenClose, ""},
                   {LexemeKind::BraceClose, ""},
               });
 
@@ -128,9 +142,7 @@ int main() {
                            {LexemeKind::Number, "1"},
                        });
 
-  test_tokens("a = 1", {{LexemeKind::Name, "a"},
-                        {LexemeKind::Assignment, ""},
-                        {LexemeKind::Number, "1"}});
+  test_tokens("a = 1", {{LexemeKind::Name, "a"}, {LexemeKind::Assignment, ""}, {LexemeKind::Number, "1"}});
 
   test_tokens("+ - * / < > <= >= ==", {
                                           {LexemeKind::Op, "+"},
@@ -162,35 +174,26 @@ int main() {
     ASSERT(eqf(vm->pos.y, 0.0), "y is 0.0");
   });
 
-  test_vm("forward(10 + 20)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -30.0), "y is -30.0"); });
+  test_vm("forward(10 + 20)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -30.0), "y is -30.0"); });
 
-  test_vm("forward(20 - 5)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -15.0), "y is -15.0"); });
+  test_vm("forward(20 - 5)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -15.0), "y is -15.0"); });
 
-  test_vm("fn walk(x) { f(x) } walk(10)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
+  test_vm("fn walk(x) { f(x) } walk(10)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
 
-  test_vm("if (1.5 < 3.0) { f(10) } else { f(20) }",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
+  test_vm("if (1.5 < 3.0) { f(10) } else { f(20) }", [](VM* vm) { ASSERT(eqf(vm->pos.y, -10.0), "y is -10.0"); });
 
-  test_vm("if (1.5 > 3.0) { f(10) } else { f(20) }",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -20.0), "y is -20.0"); });
+  test_vm("if (1.5 > 3.0) { f(10) } else { f(20) }", [](VM* vm) { ASSERT(eqf(vm->pos.y, -20.0), "y is -20.0"); });
 
-  test_vm("a = 123 f(a)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -123.0), "y is -123.0"); });
+  test_vm("a = 123 f(a)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -123.0), "y is -123.0"); });
 
   test_vm("a = rand(3, 4) f(a)", [](VM* vm) {
     ASSERT(vm->pos.y <= -3.0, "y is less than -3");
     ASSERT(vm->pos.y >= -4.0, "y is less than -4");
   });
 
-  test_vm("f(10 * 10 + 10)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
-  test_vm("f(10 + 10 * 10)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
-  test_vm("f(5 + 10 * 10 + 10 - 5)",
-          [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
+  test_vm("f(10 * 10 + 10)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
+  test_vm("f(10 + 10 * 10)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
+  test_vm("f(5 + 10 * 10 + 10 - 5)", [](VM* vm) { ASSERT(eqf(vm->pos.y, -110.0), "y is -110.0"); });
 
   // Error scenarios:
   test_vm_raise("forward");
@@ -199,6 +202,9 @@ int main() {
   test_vm_raise("forward(1, 2)");
   test_vm_raise("forward(1 < 2)");
   test_vm_raise("forward(2 + \"few\")");
+
+  // Value object testing.
+  test_value();
 
   if (failCount == 0) {
     PASS("all");

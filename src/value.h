@@ -9,9 +9,9 @@ using namespace std;
 
 enum class ValueKind {
   String,
+  Undefined,
   Number,
   Boolean,
-  Undefined,
 };
 
 struct Value {
@@ -22,10 +22,14 @@ struct Value {
   };
   ValueKind kind;
 
-  Value() : floatVal(0.0), kind(ValueKind::Undefined) {}
-  Value(float v) : floatVal(v), kind(ValueKind::Number) {}
-  Value(bool v) : boolVal(v), kind(ValueKind::Boolean) {}
-  Value(string v) : strVal(v), kind(ValueKind::String) {}
+  Value() : floatVal(0.0), kind(ValueKind::Undefined) {
+  }
+  explicit Value(float v) : floatVal(v), kind(ValueKind::Number) {
+  }
+  explicit Value(bool v) : boolVal(v), kind(ValueKind::Boolean) {
+  }
+  explicit Value(string v) : strVal(v), kind(ValueKind::String) {
+  }
 
   Value &operator=(const Value &other) {
     kind = other.kind;
@@ -64,9 +68,12 @@ struct Value {
     };
   }
 
-  Value(const Value &other) { *this = other; }
+  Value(const Value &other) {
+    *this = other;
+  }
 
   ~Value() {
+    cout << "value destructor\n";
     if (kind == ValueKind::String) strVal.~string();
   }
 

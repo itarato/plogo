@@ -62,15 +62,15 @@ struct Expr : Node {
 };
 
 struct FloatExpr : Expr {
-  float v;
+  Value floatValue;
 
-  FloatExpr(float v) : v(v) {
+  FloatExpr(float v) : floatValue(v) {
   }
 
   void execute(VM *vm) {
   }
   Value value() {
-    return Value(v);
+    return floatValue;
   }
 
   ~FloatExpr() {
@@ -103,6 +103,7 @@ struct StringExpr : Expr {
 
   void execute(VM *vm) {
   }
+
   Value value() {
     return Value(s);
   }
