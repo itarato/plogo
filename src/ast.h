@@ -56,9 +56,8 @@ struct Program : Node {
 };
 
 struct Expr : Node {
-  virtual Value value() = 0;
-  virtual ~Expr() {
-  }
+  virtual Value value() const = 0;
+  virtual ~Expr() = default;
 };
 
 struct FloatExpr : Expr {
@@ -69,7 +68,8 @@ struct FloatExpr : Expr {
 
   void execute(VM *vm) {
   }
-  Value value() {
+
+  Value value() const {
     return floatValue;
   }
 
@@ -87,7 +87,8 @@ struct NameExpr : Expr {
   void execute(VM *vm) {
     v = vm->frames.back().variables[name];
   }
-  Value value() {
+
+  Value value() const {
     return v;
   }
 
@@ -96,29 +97,62 @@ struct NameExpr : Expr {
 };
 
 struct StringExpr : Expr {
-  string s;
+  Value stringValue;
 
-  StringExpr(string s) : s(s) {
+  StringExpr(string s) : stringValue(s) {
   }
 
   void execute(VM *vm) {
   }
 
-  Value value() {
-    return Value(s);
+  Value value() const {
+    return stringValue;
   }
 
   ~StringExpr() {
   }
 };
 
+enum BinOp {
+  Add,
+  Sub,
+  Div,
+  Mul,
+  Lt,
+  Gt,
+  Lte,
+  Gte,
+  Eq,
+};
+
 struct BinOpExpr : Expr {
-  string op;
+  BinOp op;
   unique_ptr<Expr> lhs;
   unique_ptr<Expr> rhs;
   Value v;
 
-  BinOpExpr(string op, unique_ptr<Expr> lhs, unique_ptr<Expr> rhs) : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {
+  BinOpExpr(string opRaw, unique_ptr<Expr> lhs, unique_ptr<Expr> rhs) : lhs(std::move(lhs)), rhs(std::move(rhs)) {
+    if (opRaw == "+") {
+      op = BinOp::Add;
+    } else if (opRaw == "-") {
+      op = BinOp::Sub;
+    } else if (opRaw == "/") {
+      op = BinOp::Div;
+    } else if (opRaw == "*") {
+      op = BinOp::Mul;
+    } else if (opRaw == "<") {
+      op = BinOp::Lt;
+    } else if (opRaw == ">") {
+      op = BinOp::Gt;
+    } else if (opRaw == "<=") {
+      op = BinOp::Lte;
+    } else if (opRaw == ">=") {
+      op = BinOp::Gte;
+    } else if (opRaw == "==") {
+      op = BinOp::Eq;
+    } else {
+      THROW("Unknown op: %s", opRaw.c_str());
+    }
   }
 
   ~BinOpExpr() {
@@ -130,29 +164,40 @@ struct BinOpExpr : Expr {
     Value lhsVal = lhs->value();
     Value rhsVal = rhs->value();
 
-    if (op == "+") {
-      v = lhsVal.add(rhsVal);
-    } else if (op == "-") {
-      v = lhsVal.sub(rhsVal);
-    } else if (op == "/") {
-      v = lhsVal.div(rhsVal);
-    } else if (op == "*") {
-      v = lhsVal.mul(rhsVal);
-    } else if (op == "<") {
-      v = lhsVal.lt(rhsVal);
-    } else if (op == ">") {
-      v = rhsVal.lt(lhsVal);
-    } else if (op == "<=") {
-      v = lhsVal.lte(rhsVal);
-    } else if (op == ">=") {
-      v = rhsVal.lte(lhsVal);
-    } else if (op == "==") {
-      v = lhsVal.eq(rhsVal);
-    } else {
-      THROW("Unknown op: %s", op.c_str());
+    switch (op) {
+      case BinOp::Add:
+        v = lhsVal.add(rhsVal);
+        break;
+      case BinOp::Sub:
+        v = lhsVal.sub(rhsVal);
+        break;
+      case BinOp::Div:
+        v = lhsVal.div(rhsVal);
+        break;
+      case BinOp::Mul:
+        v = lhsVal.mul(rhsVal);
+        break;
+      case BinOp::Lt:
+        v = lhsVal.lt(rhsVal);
+        break;
+      case BinOp::Gt:
+        v = rhsVal.lt(lhsVal);
+        break;
+      case BinOp::Lte:
+        v = lhsVal.lte(rhsVal);
+        break;
+      case BinOp::Gte:
+        v = rhsVal.lte(lhsVal);
+        break;
+      case BinOp::Eq:
+        v = lhsVal.eq(rhsVal);
+        break;
+      default:
+        THROW("Unreachable");
     }
   }
-  Value value() {
+
+  Value value() const {
     return v;
   }
 };
@@ -163,6 +208,7 @@ struct AssignmentNode : Node {
 
   AssignmentNode(unique_ptr<NameExpr> lval, unique_ptr<Expr> rval) : lval(std::move(lval)), rval(std::move(rval)) {
   }
+
   ~AssignmentNode() {
   }
 
@@ -179,6 +225,7 @@ struct LoopNode : Node {
   LoopNode(unique_ptr<Expr> count, vector<unique_ptr<Node>> statements)
       : count(std::move(count)), statements(std::move(statements)) {
   }
+
   ~LoopNode() {
   }
 
@@ -208,6 +255,7 @@ struct IfNode : Node {
         trueStatements(std::move(trueStatements)),
         falseStatements(std::move(falseStatements)) {
   }
+
   ~IfNode() {
   }
 
@@ -234,6 +282,7 @@ struct ExecutableFnNode : Node {
   ExecutableFnNode(vector<string> argNames, vector<unique_ptr<Node>> statements)
       : argNames(argNames), statements(std::move(statements)) {
   }
+
   ~ExecutableFnNode() {
   }
 
@@ -498,7 +547,7 @@ struct FnCallNode : Expr {
     }
   }
 
-  Value value() {
+  Value value() const {
     return v;
   }
 
