@@ -9,7 +9,7 @@ TESTOBJ=$(addsuffix .o,$(basename $(TESTSRC)))
 
 .PHONY: all debug clean test
 
-all: CXXFLAGS += -O0
+all: CXXFLAGS += -O3
 all: plogo
 
 debug: CXXFLAGS += -g -O0 -fno-omit-frame-pointer

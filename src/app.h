@@ -259,8 +259,8 @@ struct App {
     Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
     DrawTriangle(p1, p2, p3, GREEN);
 
-    // for (auto &line : vm.history) {
-    //   DrawLineEx(line.from, line.to, line.thickness, line.color);
-    // }
+    for (auto &line : vm.history) {
+      DrawLineEx(line.from, line.to, line.thickness, line.color);
+    }
   }
 };

@@ -258,140 +258,242 @@ struct FnDefNode : Node {
   }
 };
 
+enum FnName {
+  FN_FORWARD,
+  FN_BACKWARD,
+  FN_LEFT,
+  FN_RIGHT,
+  FN_UP,
+  FN_DOWN,
+  FN_POS,
+  FN_ANGLE,
+  FN_THICKNESS,
+  FN_RAND,
+  FN_CLEAR,
+  FN_INTVAR,
+  FN_FLOATVAR,
+  FN_GETX,
+  FN_GETY,
+  FN_MIDX,
+  FN_MIDY,
+  FN_GETANGLE,
+  FN_DEBUG,
+  FN_PUSH,
+  FN_POP,
+  FN_LINE,
+  FN_UNKNOWN,
+};
+
 struct FnCallNode : Expr {
   Value v{};
-  string fnName;
+  FnName knownFnName;
+  string fnNameOriginal;
   vector<unique_ptr<Expr>> args;
 
-  FnCallNode(string fnName, vector<unique_ptr<Expr>> args) : fnName(fnName), args(std::move(args)) {
+  FnCallNode(string fnNameOriginal, vector<unique_ptr<Expr>> args)
+      : fnNameOriginal(fnNameOriginal), args(std::move(args)) {
+    if (fnNameOriginal == "forward" || fnNameOriginal == "f") {
+      knownFnName = FnName::FN_FORWARD;
+    } else if (fnNameOriginal == "backward" || fnNameOriginal == "b") {
+      knownFnName = FnName::FN_BACKWARD;
+    } else if (fnNameOriginal == "left" || fnNameOriginal == "l") {
+      knownFnName = FnName::FN_LEFT;
+    } else if (fnNameOriginal == "right" || fnNameOriginal == "r") {
+      knownFnName = FnName::FN_RIGHT;
+    } else if (fnNameOriginal == "up" || fnNameOriginal == "u") {
+      knownFnName = FnName::FN_UP;
+    } else if (fnNameOriginal == "down" || fnNameOriginal == "d") {
+      knownFnName = FnName::FN_DOWN;
+    } else if (fnNameOriginal == "pos" || fnNameOriginal == "p") {
+      knownFnName = FnName::FN_POS;
+    } else if (fnNameOriginal == "angle" || fnNameOriginal == "a") {
+      knownFnName = FnName::FN_ANGLE;
+    } else if (fnNameOriginal == "thickness" || fnNameOriginal == "t") {
+      knownFnName = FnName::FN_THICKNESS;
+    } else if (fnNameOriginal == "rand") {
+      knownFnName = FnName::FN_RAND;
+    } else if (fnNameOriginal == "clear" || fnNameOriginal == "c") {
+      knownFnName = FnName::FN_CLEAR;
+    } else if (fnNameOriginal == "intvar") {
+      knownFnName = FnName::FN_INTVAR;
+    } else if (fnNameOriginal == "floatvar") {
+      knownFnName = FnName::FN_FLOATVAR;
+    } else if (fnNameOriginal == "getx") {
+      knownFnName = FnName::FN_GETX;
+    } else if (fnNameOriginal == "gety") {
+      knownFnName = FnName::FN_GETY;
+    } else if (fnNameOriginal == "midx") {
+      knownFnName = FnName::FN_MIDX;
+    } else if (fnNameOriginal == "midy") {
+      knownFnName = FnName::FN_MIDY;
+    } else if (fnNameOriginal == "getangle") {
+      knownFnName = FnName::FN_GETANGLE;
+    } else if (fnNameOriginal == "debug") {
+      knownFnName = FnName::FN_DEBUG;
+    } else if (fnNameOriginal == "push") {
+      knownFnName = FnName::FN_PUSH;
+    } else if (fnNameOriginal == "pop") {
+      knownFnName = FnName::FN_POP;
+    } else if (fnNameOriginal == "line") {
+      knownFnName = FnName::FN_LINE;
+    } else {
+      knownFnName = FnName::FN_UNKNOWN;
+    }
   }
 
   void execute(VM *vm) {
     for (auto &arg : args) arg->execute(vm);
 
-    if (fnName == "forward" || fnName == "f") {
-      assert_or_throw(args.size() == 1, "Expected FN");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "FORWARD expects a number arg");
-      vm->forward(args[0]->value().floatVal);
-    } else if (fnName == "backward" || fnName == "b") {
-      assert_or_throw(args.size() == 1, "Expected 1 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "BACKWARD expects a number arg");
-      vm->backward(args[0]->value().floatVal);
-    } else if (fnName == "left" || fnName == "l") {
-      assert_or_throw(args.size() == 1, "Expected 1 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "LEFT expects a number arg");
-      vm->left(args[0]->value().floatVal);
-    } else if (fnName == "right" || fnName == "r") {
-      assert_or_throw(args.size() == 1, "Expected 1 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "RIGHT expects a number arg");
-      vm->right(args[0]->value().floatVal);
-    } else if (fnName == "up" || fnName == "u") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      vm->isDown = false;
-    } else if (fnName == "down" || fnName == "d") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      vm->isDown = true;
-    } else if (fnName == "pos" || fnName == "p") {
-      assert_or_throw(args.size() == 2, "Expected 2 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "POS expects number args");
-      assert_or_throw(args[1]->value().kind == ValueKind::Number, "POS expects number args");
-      vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
-    } else if (fnName == "angle" || fnName == "a") {
-      assert_or_throw(args.size() == 1, "Expected 1 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "POS expects number args");
-      vm->angle = args[0]->value().floatVal;
-    } else if (fnName == "thickness" || fnName == "t") {
-      assert_or_throw(args.size() == 1, "Expected 1 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "THICKNESS expects a number arg");
-      vm->thickness = args[0]->value().floatVal;
-    } else if (fnName == "rand") {
-      assert_or_throw(args.size() == 2, "Expected 2 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "RAND expects a number arg");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "RAND expects a number arg");
-      v = Value(randf((int)args[0]->value().floatVal, (int)args[1]->value().floatVal));
-    } else if (fnName == "clear" || fnName == "c") {
-      vm->reset();
-    } else if (fnName == "intvar") {
-      assert_or_throw(args.size() == 4, "Expected 4 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::String, "intvar expects a string arg");
-      assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
-      // fully put Logo structs (non ref / non pointer) into VM.
-      string name{args[0]->value().strVal};
-      vm->intVars[name] = IntVar{(int)args[1]->value().floatVal, (int)args[2]->value().floatVal};
-      if (!vm->frames.front().variables.contains(name)) {
-        vm->frames.front().variables[name] = args[3]->value();
-      }
-    } else if (fnName == "floatvar") {
-      assert_or_throw(args.size() == 4, "Expected 4 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::String, "intvar expects a string arg");
-      assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
-      // fully put Logo structs (non ref / non pointer) into VM.
-      string name{args[0]->value().strVal};
-      vm->floatVars[name] = FloatVar{args[1]->value().floatVal, args[2]->value().floatVal};
-      if (!vm->frames.front().variables.contains(name)) {
-        vm->frames.front().variables[name] = args[3]->value();
-      }
-    } else if (fnName == "getx") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      v = Value(vm->pos.x);
-    } else if (fnName == "gety") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      v = Value(vm->pos.y);
-    } else if (fnName == "midx") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      v = Value((float)(GetScreenWidth() >> 1));
-    } else if (fnName == "midy") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      v = Value((float)(GetScreenHeight() >> 1));
-    } else if (fnName == "getangle") {
-      v = Value(vm->angle);
-    } else if (fnName == "debug") {
-      for (auto &arg : args) {
-        arg->execute(vm);
-        arg->value().debug();
-      }
-    } else if (fnName == "push") {
-      for (auto &arg : args) {
-        vm->stack.push_back(arg->value());
-      }
-    } else if (fnName == "pop") {
-      assert_or_throw(args.size() == 0, "Expected 0 args");
-      assert_or_throw(!vm->stack.empty(), "Empty stack on pop");
+    string name;
 
-      v = vm->stack.back();
-      vm->stack.pop_back();
-    } else if (fnName == "line") {
-      assert_or_throw(args.size() == 4, "Expected 4 args");
-      assert_or_throw(args[0]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
-      vm->history.emplace_back(Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
-                               Vector2{args[2]->value().floatVal, args[3]->value().floatVal}, vm->thickness, vm->color);
-    } else {
-      if (!vm->functions.contains(fnName)) {
-        THROW("Unrecognized function name: %s", fnName.c_str());
-      }
+    switch (knownFnName) {
+      case FnName::FN_FORWARD:
+        assert_or_throw(args.size() == 1, "Expected FN");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "FORWARD expects a number arg");
+        vm->forward(args[0]->value().floatVal);
+        break;
+      case FnName::FN_BACKWARD:
+        assert_or_throw(args.size() == 1, "Expected 1 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "BACKWARD expects a number arg");
+        vm->backward(args[0]->value().floatVal);
+        break;
+      case FnName::FN_LEFT:
+        assert_or_throw(args.size() == 1, "Expected 1 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "LEFT expects a number arg");
+        vm->left(args[0]->value().floatVal);
+        break;
+      case FnName::FN_RIGHT:
+        assert_or_throw(args.size() == 1, "Expected 1 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "RIGHT expects a number arg");
+        vm->right(args[0]->value().floatVal);
+        break;
+      case FnName::FN_UP:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        vm->isDown = false;
+        break;
+      case FnName::FN_DOWN:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        vm->isDown = true;
+        break;
+      case FnName::FN_POS:
+        assert_or_throw(args.size() == 2, "Expected 2 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "POS expects number args");
+        assert_or_throw(args[1]->value().kind == ValueKind::Number, "POS expects number args");
+        vm->setPos(args[0]->value().floatVal, args[1]->value().floatVal);
+        break;
+      case FnName::FN_ANGLE:
+        assert_or_throw(args.size() == 1, "Expected 1 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "POS expects number args");
+        vm->angle = args[0]->value().floatVal;
+        break;
+      case FnName::FN_THICKNESS:
+        assert_or_throw(args.size() == 1, "Expected 1 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "THICKNESS expects a number arg");
+        vm->thickness = args[0]->value().floatVal;
+        break;
+      case FnName::FN_RAND:
+        assert_or_throw(args.size() == 2, "Expected 2 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "RAND expects a number arg");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "RAND expects a number arg");
+        v = Value(randf((int)args[0]->value().floatVal, (int)args[1]->value().floatVal));
+        break;
+      case FnName::FN_CLEAR:
+        vm->reset();
+        break;
+      case FnName::FN_INTVAR:
+        assert_or_throw(args.size() == 4, "Expected 4 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::String, "intvar expects a string arg");
+        assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
+        // fully put Logo structs (non ref / non pointer) into VM.
+        name = args[0]->value().strVal;
+        vm->intVars[name] = IntVar{(int)args[1]->value().floatVal, (int)args[2]->value().floatVal};
+        if (!vm->frames.front().variables.contains(name)) {
+          vm->frames.front().variables[name] = args[3]->value();
+        }
+        break;
+      case FnName::FN_FLOATVAR:
+        assert_or_throw(args.size() == 4, "Expected 4 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::String, "intvar expects a string arg");
+        assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        // TODO: This is horrible. Logo and VM is in a circular dep so we cannot
+        // fully put Logo structs (non ref / non pointer) into VM.
+        name = args[0]->value().strVal;
+        vm->floatVars[name] = FloatVar{args[1]->value().floatVal, args[2]->value().floatVal};
+        if (!vm->frames.front().variables.contains(name)) {
+          vm->frames.front().variables[name] = args[3]->value();
+        }
+        break;
+      case FnName::FN_GETX:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        v = Value(vm->pos.x);
+        break;
+      case FnName::FN_GETY:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        v = Value(vm->pos.y);
+        break;
+      case FnName::FN_MIDX:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        v = Value((float)(GetScreenWidth() >> 1));
+        break;
+      case FnName::FN_MIDY:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        v = Value((float)(GetScreenHeight() >> 1));
+        break;
+      case FnName::FN_GETANGLE:
+        v = Value(vm->angle);
+        break;
+      case FnName::FN_DEBUG:
+        for (auto &arg : args) {
+          arg->execute(vm);
+          arg->value().debug();
+        }
+        break;
+      case FnName::FN_PUSH:
+        for (auto &arg : args) {
+          vm->stack.push_back(arg->value());
+        }
+        break;
+      case FnName::FN_POP:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        assert_or_throw(!vm->stack.empty(), "Empty stack on pop");
 
-      auto fn = vm->functions[fnName];
+        v = vm->stack.back();
+        vm->stack.pop_back();
+        break;
+      case FnName::FN_LINE:
+        assert_or_throw(args.size() == 4, "Expected 4 args");
+        assert_or_throw(args[0]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
+        vm->history.emplace_back(Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
+                                 Vector2{args[2]->value().floatVal, args[3]->value().floatVal}, vm->thickness,
+                                 vm->color);
+        break;
+      default:
+        if (!vm->functions.contains(fnNameOriginal)) {
+          THROW("Unrecognized function name: %s", fnNameOriginal.c_str());
+        }
 
-      assert_or_throw(args.size() == fn->argNames.size(), "FN arg count mismatch");
+        auto fn = vm->functions[fnNameOriginal];
 
-      Frame newFrame{};
+        assert_or_throw(args.size() == fn->argNames.size(), "FN arg count mismatch");
 
-      for (int i = 0; i < (int)args.size(); i++) {
-        newFrame.variables[fn->argNames[i]] = args[i]->value();
-      }
+        Frame newFrame{};
 
-      vm->frames.push_back(newFrame);
-      fn->execute(vm);
-      vm->frames.pop_back();
+        for (int i = 0; i < (int)args.size(); i++) {
+          newFrame.variables[fn->argNames[i]] = args[i]->value();
+        }
+
+        vm->frames.push_back(newFrame);
+        fn->execute(vm);
+        vm->frames.pop_back();
+        break;
     }
   }
 
