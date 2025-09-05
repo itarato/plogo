@@ -13,7 +13,7 @@ int main(int argc, char** args) {
   config.win_w = 1024;
   config.win_h = 768;
 
-  App app = App();
+  App app;
   app.init();
 
   if (argc >= 2) app.setSourceFile(args[1]);

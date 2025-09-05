@@ -5,8 +5,7 @@
 #include "parser.h"
 #include "vm.h"
 
-void runLogo(string code, VM *vm)
-{
+void runLogo(string code, VM *vm) {
   TraceLog(LOG_INFO, "Compile start");
   double t_start = GetTime();
 

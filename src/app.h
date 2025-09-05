@@ -15,12 +15,14 @@
 #include "raymath.h"
 #include "rlImGui.h"
 #include "text_input.h"
+#include "util.h"
 #include "vm.h"
 
 using namespace std;
 
-#define INTVARLIMIT 32
-#define FLOATVARLIMIT 32
+constexpr int INTVARLIMIT = 32;
+constexpr int FLOATVARLIMIT = 32;
+constexpr float DRAW_TEXTURE_SCALE = 2.f;
 
 const vector<string> builtInFunctions{
     "forward [f]",   "backward [b]", "left [l]",  "right [r]", "up [u]",   "down [d]", "pos [p]", "angle [a]",
@@ -30,27 +32,35 @@ const vector<string> builtInFunctions{
 struct App {
   TextInput textInput{};
   VM vm{};
+  RenderTexture2D drawTexture;
 
   int vstartx{0};
   int vstarty{0};
   int vstartangle{0};
 
   bool needScriptReload{false};
+  bool needDrawTextureRedraw{false};
 
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
-  App() {
-  }
+  App() = default;
+
   App(const App &) = delete;
+
   App(App &&) = delete;
 
-  void init() {
-    int win_flags = FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT;
-    SetConfigFlags(win_flags);
+  void destruct_assets() {
+    UnloadRenderTexture(drawTexture);
+  }
 
+  void init() {
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(config.win_w, config.win_h, "P-Logo V(0)");
     SetTargetFPS(24);
+
+    drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
+    SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
 
     rlImGuiSetup(true);
 
@@ -82,11 +92,10 @@ struct App {
 
     try {
       runLogo(fileContent, &vm);
+      needDrawTextureRedraw = true;
     } catch (runtime_error &e) {
       WARN("Compile error: %s", e.what());
     }
-
-    needScriptReload = false;
   }
 
   void reset() {
@@ -100,6 +109,8 @@ struct App {
     while (!WindowShouldClose()) {
       update();
 
+      draw_draw_texture();
+
       BeginDrawing();
 
       ClearBackground(RAYWHITE);
@@ -109,6 +120,8 @@ struct App {
 
       EndDrawing();
     }
+
+    destruct_assets();
 
     rlImGuiShutdown();
 
@@ -131,6 +144,7 @@ struct App {
     if (command.has_value()) {
       try {
         runLogo(command.value(), &vm);
+        needDrawTextureRedraw = true;
       } catch (runtime_error &e) {
         WARN("Compile error: %s", e.what());
       }
@@ -248,6 +262,8 @@ struct App {
   }
 
   void draw() const {
+    DrawTextureEx(drawTexture.texture, Vector2Zero(), 0.f, 1.f / DRAW_TEXTURE_SCALE, WHITE);
+
     DrawFPS(GetScreenWidth() - 100, 4);
     DrawText(TextFormat("Line count: %d", vm.history.size()), GetScreenWidth() - 100, 28, 10, BLACK);
 
@@ -258,9 +274,26 @@ struct App {
     Vector2 p2 = Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
     Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
     DrawTriangle(p1, p2, p3, GREEN);
+  }
 
-    for (auto &line : vm.history) {
-      DrawLineEx(line.from, line.to, line.thickness, line.color);
+  void draw_draw_texture() {
+    Vector2 start{};
+    Vector2 end{};
+
+    if (needDrawTextureRedraw) {
+      BeginTextureMode(drawTexture);
+      DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE, WHITE);
+      for (auto const &line : vm.history) {
+        start.x = line.from.x * DRAW_TEXTURE_SCALE;
+        start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
+
+        end.x = line.to.x * DRAW_TEXTURE_SCALE;
+        end.y = (GetScreenHeight() - line.to.y) * DRAW_TEXTURE_SCALE;
+
+        DrawLineEx(start, end, line.thickness * DRAW_TEXTURE_SCALE, line.color);
+      }
+      EndTextureMode();
+      needDrawTextureRedraw = false;
     }
   }
 };
