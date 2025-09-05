@@ -78,25 +78,30 @@ void test_vm_raise(string code) {
   }
 }
 
-// struct TestValueMock {
-//   Value v;
+struct TestValueMock {
+  Value v;
 
-//   TestValueMock(string s) : v(s) {
-//   }
+  TestValueMock(string s) : v(s) {
+  }
 
-//   Value get() {
-//     return v;
-//   }
-// };
+  Value get() {
+    return v;
+  }
+};
 
-// void test_value() {
-//   string s{"hello"};
-//   TestValueMock tvm{s};
+void test_value() {
+  string s{"hello"};
+  TestValueMock tvm{s};
 
-//   auto x = tvm.get();
+  tvm = tvm;
 
-//   PASS("Value with string works");
-// }
+  auto x = tvm.get();
+
+  Value v{string{"world"}};
+  v = v;
+
+  PASS("Value with string works: %s %s", tvm.v.strVal, v.strVal);
+}
 
 int main() {
   INFO("start");

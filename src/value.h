@@ -18,37 +18,36 @@ struct Value {
   union {
     float floatVal;
     bool boolVal;
-    string strVal;
+    char *strVal;
   };
+
   ValueKind kind;
 
   Value() : floatVal(0.0), kind(ValueKind::Undefined) {
   }
+
   explicit Value(float v) : floatVal(v), kind(ValueKind::Number) {
   }
+
   explicit Value(bool v) : boolVal(v), kind(ValueKind::Boolean) {
   }
-  explicit Value(string v) : strVal(v), kind(ValueKind::String) {
+
+  explicit Value(string const &v) : kind(ValueKind::String) {
+    strVal = new char[v.length() + 1];
+    strcpy(strVal, v.c_str());
   }
 
-  Value &operator=(const Value &other) {
-    kind = other.kind;
-    switch (other.kind) {
-      case ValueKind::Boolean:
-        boolVal = other.boolVal;
-        break;
-      case ValueKind::Number:
-        floatVal = other.floatVal;
-        break;
-      case ValueKind::String:
-        strVal = other.strVal;
-        break;
-      default:
-        floatVal = 0.0f;
-        break;
-    };
+  Value &operator=(Value const &other) {
+    if (this != &other) {
+      cleanup();
+      copy_from(other);
+    }
 
     return *this;
+  }
+
+  Value(Value const &other) : kind(ValueKind::Undefined) {
+    copy_from(other);
   }
 
   void debug() const {
@@ -60,7 +59,7 @@ struct Value {
         DEBUG("%f", floatVal);
         break;
       case ValueKind::String:
-        DEBUG("%s", strVal.c_str());
+        DEBUG("%s", strVal);
         break;
       default:
         DEBUG("NULL");
@@ -68,13 +67,8 @@ struct Value {
     };
   }
 
-  Value(const Value &other) {
-    *this = other;
-  }
-
   ~Value() {
-    cout << "value destructor\n";
-    if (kind == ValueKind::String) strVal.~string();
+    cleanup();
   }
 
   Value add(Value &other) {
@@ -137,5 +131,29 @@ struct Value {
 
   inline bool is_same_kind(Value &other, ValueKind assertedKind) {
     return kind == assertedKind && other.kind == assertedKind;
+  }
+
+ private:
+  void cleanup() {
+    if (kind == ValueKind::String) delete[] strVal;
+  }
+
+  void copy_from(Value const &other) {
+    kind = other.kind;
+    switch (other.kind) {
+      case ValueKind::Boolean:
+        boolVal = other.boolVal;
+        break;
+      case ValueKind::Number:
+        floatVal = other.floatVal;
+        break;
+      case ValueKind::String:
+        strVal = new char[strlen(other.strVal) + 1];
+        strcpy(strVal, other.strVal);
+        break;
+      default:
+        floatVal = 0.0f;
+        break;
+    };
   }
 };
