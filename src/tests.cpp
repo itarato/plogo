@@ -164,6 +164,14 @@ int main() {
 
   test_tokens("__abc_1", {{LexemeKind::Name, "__abc_1"}});
 
+  test_tokens("-10.5 - -0.5 -x", {
+                                     {LexemeKind::Number, "-10.5"},
+                                     {LexemeKind::Op, "-"},
+                                     {LexemeKind::Number, "-0.5"},
+                                     {LexemeKind::Op, "-"},
+                                     {LexemeKind::Name, "x"},
+                                 });
+
   test_vm("forward(10)", [](VM* vm) {
     ASSERT(eqf(vm->angle, 0.0), "angle is 0");
     ASSERT(eqf(vm->pos.x, 0.0), "x is 0.0");

@@ -324,7 +324,7 @@ struct App {
   void drawToolbarDebug() {
     if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Text("FPS: %d", GetFPS());
-      ImGui::Text("Edge count: %'lu", vm.history.size());
+      ImGui::Text("Edge count: %lu", vm.history.size());
       ImGui::Text("Render time: %.2f ms", lastRenderTime * 1000.f);
 
       ImGui::Separator();
@@ -345,7 +345,7 @@ struct App {
 
   void drawToolbarLog() {
     if (ImGui::CollapsingHeader("Logs")) {
-      ImGui::Text(appLog.aggregated.c_str());
+      ImGui::Text("%s", appLog.aggregated.c_str());
     }
   }
 
@@ -356,7 +356,7 @@ struct App {
         string signature{k};
         signature += "(";
 
-        for (int i = 0; i < v->argNames.size(); i++) {
+        for (unsigned int i = 0; i < v->argNames.size(); i++) {
           signature += v->argNames[i];
           if (i < v->argNames.size() - 1) signature += ",";
         }

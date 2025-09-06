@@ -57,6 +57,5 @@ leaf(size, angle, iter, dec, limit)
 
 ## Todo
 
-- negative numbers
 - parens for parsing (expr group)
 - logs (for errors and logo var debug)

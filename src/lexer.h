@@ -88,10 +88,19 @@ struct Lexer {
       } else if (c == ',') {
         lexemes.push_back(Lexeme(LexemeKind::Comma));
         next();
-      } else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%') {
+      } else if (c == '+' || c == '*' || c == '/' || c == '%') {
         string opStr{c};
         lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
         next();
+      } else if (c == '-') {
+        next();
+
+        if (isdigit(peek())) {
+          lexemes.push_back(readNumber(true));
+        } else {
+          string opStr{c};
+          lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
+        }
       } else if (c == '<' || c == '>') {
         next();
         string opStr{c};
@@ -126,8 +135,16 @@ struct Lexer {
     }
   }
 
-  Lexeme readNumber() {
-    string word = readWhile([](char c) -> bool { return isdigit(c) || c == '.'; });
+  Lexeme readNumber(bool negative = false) {
+    string word;
+
+    if (negative) {
+      word = "-";
+    } else {
+      word = "";
+    }
+
+    word += readWhile([](char c) -> bool { return isdigit(c) || c == '.'; });
     return Lexeme(LexemeKind::Number, word);
   }
 
