@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -30,7 +31,7 @@ const vector<string> builtInFunctions{
     "push",          "pop",          "line",      "midx",      "midy",     "debug"};
 
 struct App {
-  TextInput textInput{};
+  // TextInput textInput{};
   VM vm{};
   RenderTexture2D drawTexture;
 
@@ -48,6 +49,8 @@ struct App {
   int winHeight;
 
   float lastRenderTime{};
+
+  char sourceCode[2048]{};
 
   App() = default;
 
@@ -68,7 +71,7 @@ struct App {
 
     rlImGuiSetup(true);
 
-    textInput.init();
+    // textInput.init();
 
     winWidth = GetScreenWidth();
     winHeight = GetScreenHeight();
@@ -81,17 +84,30 @@ struct App {
     SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
   }
 
-  void setSourceFile(char *fileName) {
-    sourceFileName = fileName;
+  void loadSourceFile(char *_sourceFileName) {
+    sourceFileName = _sourceFileName;
+    if (sourceFileName == nullptr) return;
+
+    INFO("Loading script: %s", sourceFileName);
+
+    sourceFileUpdateTime = getSourceFileUpdateTime();
+
+    std::string fileContent;
+    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
+
+    bzero(sourceCode, sizeof(sourceCode));
+    TraceLog(LOG_INFO, "Zero %d bytes", sizeof(sourceCode));
+    if (sizeof(sourceCode) > fileContent.size()) {
+      strncpy(sourceCode, fileContent.c_str(), fileContent.size());
+    } else {
+      TraceLog(LOG_WARNING, "Source code exceeds input buffer size");
+    }
+
     scriptReload();
   }
 
   void scriptReload() {
-    if (sourceFileName == nullptr) return;
-
-    INFO("Reloading script: %s", sourceFileName);
-
-    sourceFileUpdateTime = getSourceFileUpdateTime();
+    INFO("Reloading script");
 
     vm.reset();
 
@@ -99,11 +115,8 @@ struct App {
     vm.pos.y = vstarty;
     vm.angle = vstartangle;
 
-    std::string fileContent;
-    std::getline(std::ifstream(sourceFileName), fileContent, '\0');
-
     try {
-      runLogo(fileContent, &vm, &lastRenderTime);
+      runLogo(sourceCode, &vm, &lastRenderTime);
       needDrawTextureRedraw = true;
     } catch (runtime_error &e) {
       WARN("Compile error: %s", e.what());
@@ -160,15 +173,15 @@ struct App {
 
     if (needScriptReload) scriptReload();
 
-    auto command = textInput.update();
-    if (command.has_value()) {
-      try {
-        runLogo(command.value(), &vm, &lastRenderTime);
-        needDrawTextureRedraw = true;
-      } catch (runtime_error &e) {
-        WARN("Compile error: %s", e.what());
-      }
-    }
+    // auto command = textInput.update();
+    // if (command.has_value()) {
+    //   try {
+    //     runLogo(command.value(), &vm, &lastRenderTime);
+    //     needDrawTextureRedraw = true;
+    //   } catch (runtime_error &e) {
+    //     WARN("Compile error: %s", e.what());
+    //   }
+    // }
   }
 
   void checkSourceForUpdates() {
@@ -177,7 +190,7 @@ struct App {
     auto currentTime = getSourceFileUpdateTime();
     if (currentTime != sourceFileUpdateTime) {
       vm.hardReset();
-      scriptReload();
+      loadSourceFile(sourceFileName);
     }
   }
 
@@ -191,6 +204,7 @@ struct App {
     ImGui::Begin("Toolbar");
 
     drawToolbarVariables();
+    drawSourceCode();
     drawToolbarDebug();
     drawToolbarHelp();
 
@@ -246,6 +260,17 @@ struct App {
     needScriptReload = didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle;
   }
 
+  void drawSourceCode() {
+    if (ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
+                                ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32), ImGuiInputTextFlags_AllowTabInput);
+
+      if (ImGui::Button("Compile")) {
+        needScriptReload = true;
+      }
+    }
+  }
+
   void drawToolbarDebug() {
     if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Text("FPS: %d", GetFPS());
@@ -287,7 +312,7 @@ struct App {
   void draw() const {
     DrawTextureEx(drawTexture.texture, Vector2Zero(), 0.f, 1.f / DRAW_TEXTURE_SCALE, WHITE);
 
-    textInput.draw();
+    // textInput.draw();
 
     // Draw turtle (triangle).
     Vector2 p1 = Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);

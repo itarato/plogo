@@ -18,7 +18,7 @@ int main(int argc, char** args) {
   App app;
   app.init();
 
-  if (argc >= 2) app.setSourceFile(args[1]);
+  if (argc >= 2) app.loadSourceFile(args[1]);
 
   app.run();
 
