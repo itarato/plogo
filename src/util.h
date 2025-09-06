@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <list>
 #include <memory>
 #include <vector>
 
@@ -32,8 +33,10 @@ void throw_runtime_error(const char* s, ...) {
   va_list args;
   va_start(args, s);
 
-  char msgbuf[128];
-  snprintf(msgbuf, 128, s, args);
+  const int buf_size = 256;
+
+  char msgbuf[buf_size];
+  vsnprintf(msgbuf, buf_size, s, args);
 
   va_end(args);
 
@@ -70,3 +73,27 @@ inline void assert_or_throw(bool cond, string msg) {
     throw runtime_error(msg);
   }
 }
+
+struct AppLog {
+  list<string> lines{};
+  string aggregated{};
+
+  void append(string line) {
+    lines.push_back(line);
+    refresh();
+  }
+
+ private:
+  void refresh() {
+    aggregated.clear();
+
+    while (lines.size() > 10) lines.pop_front();
+
+    for (auto const& line : lines) {
+      aggregated += line;
+      aggregated += "\n";
+    }
+  }
+};
+
+static AppLog appLog{};

@@ -22,19 +22,46 @@
 using namespace std;
 
 constexpr int SCRIPT_RELOAD_NO = 0;
-constexpr int SCRIPT_RELOAD_SOFT = 1;
-constexpr int SCRIPT_RELOAD_HARD = 2;
-constexpr int INTVARLIMIT = 32;
-constexpr int FLOATVARLIMIT = 32;
+constexpr int SCRIPT_RELOAD_LIGHT = 1;
+constexpr int SCRIPT_RELOAD_LIGHT_AND_STATE = 2;
+constexpr int SCRIPT_RELOAD_FULL = 3;
+
+constexpr int INTVARLIMIT = 64;
+constexpr int FLOATVARLIMIT = 64;
+
+// We need to render the logo drawing high scale as textures rasterize lines without smoothing. Downscaling gives
+// us a little bit of smooothing. 2 seems to be the sweet spot with trilinear texture filter.
 constexpr float DRAW_TEXTURE_SCALE = 2.f;
 
 const vector<string> builtInFunctions{
-    "forward [f]",   "backward [b]", "left [l]",  "right [r]", "up [u]",   "down [d]", "pos [p]", "angle [a]",
-    "thickness [t]", "rand",         "clear [c]", "intvar",    "floatvar", "getx",     "gety",    "getangle",
-    "push",          "pop",          "line",      "midx",      "midy",     "debug"};
+    "[f]orward(NUM)",
+    "[b]ackward(NUM)",
+    "[l]eft(NUM)",
+    "[r]ight(NUM)",
+    "[u]p()",
+    "[d]own()",
+    "[p]os(NUM, NUM)",
+    "[a]ngle(NUM)",
+    "[t]hickness(NUM)",
+    "[c]lear()",
+    "rand(NUM, NUM) -> NUM",
+    "intvar(STR, NUM, NUM, NUM)",
+    "floatvar(STR, NUM, NUM, NUM)",
+    "getx() -> NUM",
+    "gety() -> NUM",
+    "getangle() -> NUM",
+    "push(NUM, ...)",
+    "pop() -> NUM",
+    "line(NUM, NUM, NUM, NUM)",
+    "winw() -> NUM",
+    "winh() -> NUM",
+    "midx() -> NUM",
+    "midy() -> NUM",
+    "debug(NUM, ...)",
+};
 
 struct App {
-  // TextInput textInput{};
+  TextInput textInput{};
   VM vm{};
   RenderTexture2D drawTexture;
 
@@ -58,6 +85,8 @@ struct App {
 
   char sourceCode[2048]{};
 
+  bool showSourceCode{true};
+
   App() = default;
 
   App(const App &) = delete;
@@ -77,7 +106,7 @@ struct App {
 
     rlImGuiSetup(true);
 
-    // textInput.init();
+    textInput.init();
 
     winWidth = GetScreenWidth();
     winHeight = GetScreenHeight();
@@ -113,7 +142,7 @@ struct App {
       TraceLog(LOG_WARNING, "Source code exceeds input buffer size");
     }
 
-    needScriptReload = SCRIPT_RELOAD_HARD;
+    needScriptReload = SCRIPT_RELOAD_FULL;
     scriptReload();
   }
 
@@ -132,17 +161,16 @@ struct App {
       i++;
     }
 
-    vm.reset(needScriptReload >= SCRIPT_RELOAD_HARD);
-    vm.pos.x = vstartx;
-    vm.pos.y = vstarty;
-    vm.angle = vstartangle;
+    vm.reset(needScriptReload >= SCRIPT_RELOAD_FULL, needScriptReload >= SCRIPT_RELOAD_LIGHT_AND_STATE);
 
-    try {
-      runLogo(sourceCode, &vm, &lastRenderTime);
-      needDrawTextureRedraw = true;
-    } catch (runtime_error &e) {
-      WARN("Compile error: %s", e.what());
+    if (needScriptReload >= SCRIPT_RELOAD_LIGHT_AND_STATE) {
+      vm.pos.x = vstartx;
+      vm.pos.y = vstarty;
+      vm.angle = vstartangle;
     }
+
+    runLogo(sourceCode, &vm, &lastRenderTime);
+    needDrawTextureRedraw = true;
 
     i = 0;
     for (auto &[k, v] : vm.intVars) {
@@ -194,22 +222,20 @@ struct App {
     if (IsMouseButtonPressed(1)) {
       vstartx = GetMousePosition().x;
       vstarty = GetMousePosition().y;
-      needScriptReload = SCRIPT_RELOAD_SOFT;
+      needScriptReload = SCRIPT_RELOAD_LIGHT_AND_STATE;
     }
 
     checkSourceForUpdates();
 
     if (needScriptReload > SCRIPT_RELOAD_NO) scriptReload();
 
-    // auto command = textInput.update();
-    // if (command.has_value()) {
-    //   try {
-    //     runLogo(command.value(), &vm, &lastRenderTime);
-    //     needDrawTextureRedraw = true;
-    //   } catch (runtime_error &e) {
-    //     WARN("Compile error: %s", e.what());
-    //   }
-    // }
+    if (!showSourceCode) {
+      auto command = textInput.update();
+      if (command.has_value()) {
+        runLogo(command.value().c_str(), &vm, &lastRenderTime);
+        needDrawTextureRedraw = true;
+      }
+    }
   }
 
   void checkSourceForUpdates() {
@@ -233,6 +259,7 @@ struct App {
     drawToolbarVariables();
     drawSourceCode();
     drawToolbarDebug();
+    drawToolbarLog();
     drawToolbarHelp();
 
     ImGui::End();
@@ -277,16 +304,20 @@ struct App {
 
     if (needScriptReload == SCRIPT_RELOAD_NO &&
         (didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle)) {
-      needScriptReload = SCRIPT_RELOAD_SOFT;
+      needScriptReload = SCRIPT_RELOAD_LIGHT_AND_STATE;
     }
   }
 
   void drawSourceCode() {
-    if (ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen)) {
+    showSourceCode = ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen);
+
+    if (showSourceCode) {
       ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
                                 ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32), ImGuiInputTextFlags_AllowTabInput);
 
-      if (ImGui::Button("Compile")) needScriptReload = SCRIPT_RELOAD_HARD;
+      if (ImGui::Button("Clear and run")) needScriptReload = SCRIPT_RELOAD_FULL;
+      ImGui::SameLine();
+      if (ImGui::Button("Run")) needScriptReload = SCRIPT_RELOAD_LIGHT;
     }
   }
 
@@ -312,18 +343,33 @@ struct App {
     }
   }
 
+  void drawToolbarLog() {
+    if (ImGui::CollapsingHeader("Logs")) {
+      ImGui::Text(appLog.aggregated.c_str());
+    }
+  }
+
   void drawToolbarHelp() {
-    if (ImGui::CollapsingHeader("Help")) {
-      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
-      for (auto e : builtInFunctions) {
-        ImGui::BulletText("%s", e.c_str());
+    if (ImGui::CollapsingHeader("Reference")) {
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
+      for (auto &[k, v] : vm.functions) {
+        string signature{k};
+        signature += "(";
+
+        for (int i = 0; i < v->argNames.size(); i++) {
+          signature += v->argNames[i];
+          if (i < v->argNames.size() - 1) signature += ",";
+        }
+
+        signature += ")";
+        ImGui::BulletText("%s", signature.c_str());
       }
 
       ImGui::Separator();
 
-      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
-      for (auto &[k, _v] : vm.functions) {
-        ImGui::BulletText("%s", k.c_str());
+      ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Built in functions:");
+      for (auto e : builtInFunctions) {
+        ImGui::BulletText("%s", e.c_str());
       }
     }
   }
@@ -331,7 +377,7 @@ struct App {
   void draw() const {
     DrawTextureEx(drawTexture.texture, Vector2Zero(), 0.f, 1.f / DRAW_TEXTURE_SCALE, WHITE);
 
-    // textInput.draw();
+    if (!showSourceCode) textInput.draw();
 
     // Draw turtle (triangle).
     Vector2 p1 = Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);

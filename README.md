@@ -54,3 +54,9 @@ leaf(size, angle, iter, dec, limit)
 ![Triangle fractal](./misc/frac_triangle.png)
 
 ![Zigzag fractal](./misc/frac_zigzag.png)
+
+## Todo
+
+- negative numbers
+- parens for parsing (expr group)
+- logs (for errors and logo var debug)

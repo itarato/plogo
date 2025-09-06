@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <exception>
 #include <string>
 
@@ -54,15 +55,19 @@ struct Value {
     switch (kind) {
       case ValueKind::Boolean:
         DEBUG("%b", boolVal);
+        appLog.append(TextFormat("[DEBUG] Boolean %b", boolVal));
         break;
       case ValueKind::Number:
         DEBUG("%f", floatVal);
+        appLog.append(TextFormat("[DEBUG] Number %f", floatVal));
         break;
       case ValueKind::String:
         DEBUG("%s", strVal);
+        appLog.append(TextFormat("[DEBUG] String %s", strVal));
         break;
       default:
         DEBUG("NULL");
+        appLog.append(TextFormat("[DEBUG] NULL"));
         break;
     };
   }
@@ -90,6 +95,13 @@ struct Value {
       throw runtime_error("'mul' on non numbers");
     }
     return Value(floatVal * other.floatVal);
+  }
+
+  Value mod(Value &other) {
+    if (!is_same_kind(other, ValueKind::Number)) {
+      throw runtime_error("'mod' on non numbers");
+    }
+    return Value(static_cast<float>(static_cast<int>(floatVal) % static_cast<int>(other.floatVal)));
   }
 
   Value div(Value &other) {

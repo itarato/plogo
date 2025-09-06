@@ -149,17 +149,18 @@ int main() {
 
   test_tokens("a = 1", {{LexemeKind::Name, "a"}, {LexemeKind::Assignment, ""}, {LexemeKind::Number, "1"}});
 
-  test_tokens("+ - * / < > <= >= ==", {
-                                          {LexemeKind::Op, "+"},
-                                          {LexemeKind::Op, "-"},
-                                          {LexemeKind::Op, "*"},
-                                          {LexemeKind::Op, "/"},
-                                          {LexemeKind::Op, "<"},
-                                          {LexemeKind::Op, ">"},
-                                          {LexemeKind::Op, "<="},
-                                          {LexemeKind::Op, ">="},
-                                          {LexemeKind::Op, "=="},
-                                      });
+  test_tokens("+ - * / % < > <= >= ==", {
+                                            {LexemeKind::Op, "+"},
+                                            {LexemeKind::Op, "-"},
+                                            {LexemeKind::Op, "*"},
+                                            {LexemeKind::Op, "/"},
+                                            {LexemeKind::Op, "%"},
+                                            {LexemeKind::Op, "<"},
+                                            {LexemeKind::Op, ">"},
+                                            {LexemeKind::Op, "<="},
+                                            {LexemeKind::Op, ">="},
+                                            {LexemeKind::Op, "=="},
+                                        });
 
   test_tokens("__abc_1", {{LexemeKind::Name, "__abc_1"}});
 

@@ -117,6 +117,7 @@ enum BinOp {
   Sub,
   Div,
   Mul,
+  Mod,
   Lt,
   Gt,
   Lte,
@@ -139,6 +140,8 @@ struct BinOpExpr : Expr {
       op = BinOp::Div;
     } else if (opRaw == "*") {
       op = BinOp::Mul;
+    } else if (opRaw == "%") {
+      op = BinOp::Mod;
     } else if (opRaw == "<") {
       op = BinOp::Lt;
     } else if (opRaw == ">") {
@@ -175,6 +178,9 @@ struct BinOpExpr : Expr {
         break;
       case BinOp::Mul:
         v = lhsVal.mul(rhsVal);
+        break;
+      case BinOp::Mod:
+        v = lhsVal.mod(rhsVal);
         break;
       case BinOp::Lt:
         v = lhsVal.lt(rhsVal);
@@ -331,6 +337,8 @@ enum FnName {
   FN_FLOATVAR,
   FN_GETX,
   FN_GETY,
+  FN_WINW,
+  FN_WINH,
   FN_MIDX,
   FN_MIDY,
   FN_GETANGLE,
@@ -379,6 +387,10 @@ struct FnCallNode : Expr {
       knownFnName = FnName::FN_GETX;
     } else if (fnNameOriginal == "gety") {
       knownFnName = FnName::FN_GETY;
+    } else if (fnNameOriginal == "winw") {
+      knownFnName = FnName::FN_WINW;
+    } else if (fnNameOriginal == "winh") {
+      knownFnName = FnName::FN_WINH;
     } else if (fnNameOriginal == "midx") {
       knownFnName = FnName::FN_MIDX;
     } else if (fnNameOriginal == "midy") {
@@ -405,7 +417,7 @@ struct FnCallNode : Expr {
 
     switch (knownFnName) {
       case FnName::FN_FORWARD:
-        assert_or_throw(args.size() == 1, "Expected FN");
+        assert_or_throw(args.size() == 1, "Expected 1 args");
         assert_or_throw(args[0]->value().kind == ValueKind::Number, "FORWARD expects a number arg");
         vm->forward(args[0]->value().floatVal);
         break;
@@ -493,6 +505,14 @@ struct FnCallNode : Expr {
         assert_or_throw(args.size() == 0, "Expected 0 args");
         v = Value(vm->pos.y);
         break;
+      case FnName::FN_WINW:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        v = Value((float)(GetScreenWidth()));
+        break;
+      case FnName::FN_WINH:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
+        v = Value((float)(GetScreenHeight()));
+        break;
       case FnName::FN_MIDX:
         assert_or_throw(args.size() == 0, "Expected 0 args");
         v = Value((float)(GetScreenWidth() >> 1));
@@ -502,6 +522,7 @@ struct FnCallNode : Expr {
         v = Value((float)(GetScreenHeight() >> 1));
         break;
       case FnName::FN_GETANGLE:
+        assert_or_throw(args.size() == 0, "Expected 0 args");
         v = Value(vm->angle);
         break;
       case FnName::FN_DEBUG:

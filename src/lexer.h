@@ -30,7 +30,7 @@ int precedence(string s) {
     return 3;
   } else if (s == "+" || s == "-") {
     return 2;
-  } else if (s == "*" || s == "/") {
+  } else if (s == "*" || s == "/" || s == "%") {
     return 1;
   }
 
@@ -42,18 +42,22 @@ struct Lexeme {
   LexemeKind kind;
   string v{};
 
-  Lexeme(LexemeKind kind) : kind(kind) {}
-  Lexeme(LexemeKind kind, string v) : kind(kind), v(v) {}
+  Lexeme(LexemeKind kind) : kind(kind) {
+  }
+  Lexeme(LexemeKind kind, string v) : kind(kind), v(v) {
+  }
 };
 
 struct Lexer {
   string code;
   size_t ptr = 0;
 
-  Lexer(string code) : code(code) {}
+  Lexer(string code) : code(code) {
+  }
   Lexer(const Lexer &code) = delete;
   Lexer(Lexer &&code) = delete;
-  ~Lexer() {}
+  ~Lexer() {
+  }
 
   vector<Lexeme> parse() {
     vector<Lexeme> lexemes{};
@@ -84,7 +88,7 @@ struct Lexer {
       } else if (c == ',') {
         lexemes.push_back(Lexeme(LexemeKind::Comma));
         next();
-      } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+      } else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%') {
         string opStr{c};
         lexemes.push_back(Lexeme(LexemeKind::Op, opStr));
         next();
@@ -105,7 +109,7 @@ struct Lexer {
       } else if (c == '#') {
         readWhile([](char c) -> bool { return c != '\n'; });
       } else {
-        THROW("Unknown character in lexing: %c", c);
+        THROW("Unknown character in lexing <%c> at pos %d", c, ptr);
       }
     }
 
@@ -113,8 +117,7 @@ struct Lexer {
   }
 
   Lexeme readWord() {
-    string word =
-        readWhile([](char c) -> bool { return isalnum(c) || c == '_'; });
+    string word = readWhile([](char c) -> bool { return isalnum(c) || c == '_'; });
     auto it = find(keywords.begin(), keywords.end(), word);
     if (it == keywords.end()) {
       return Lexeme(LexemeKind::Name, word);
@@ -124,8 +127,7 @@ struct Lexer {
   }
 
   Lexeme readNumber() {
-    string word =
-        readWhile([](char c) -> bool { return isdigit(c) || c == '.'; });
+    string word = readWhile([](char c) -> bool { return isdigit(c) || c == '.'; });
     return Lexeme(LexemeKind::Number, word);
   }
 
@@ -146,7 +148,9 @@ struct Lexer {
     return out;
   }
 
-  bool isEnd() const { return ptr >= code.size(); }
+  bool isEnd() const {
+    return ptr >= code.size();
+  }
   char peek() const {
     if (isEnd()) {
       throw runtime_error("EOF when asking peek in lexer");
