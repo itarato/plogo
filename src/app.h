@@ -44,6 +44,11 @@ struct App {
   char *sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime;
 
+  int winWidth;
+  int winHeight;
+
+  float lastRenderTime{};
+
   App() = default;
 
   App(const App &) = delete;
@@ -55,18 +60,25 @@ struct App {
   }
 
   void init() {
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(config.win_w, config.win_h, "P-Logo V(0)");
     SetTargetFPS(24);
 
-    drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
-    SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
+    init_render_texture();
 
     rlImGuiSetup(true);
 
     textInput.init();
 
+    winWidth = GetScreenWidth();
+    winHeight = GetScreenHeight();
+
     reset();
+  }
+
+  void init_render_texture() {
+    drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
+    SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
   }
 
   void setSourceFile(char *fileName) {
@@ -91,7 +103,7 @@ struct App {
     std::getline(std::ifstream(sourceFileName), fileContent, '\0');
 
     try {
-      runLogo(fileContent, &vm);
+      runLogo(fileContent, &vm, &lastRenderTime);
       needDrawTextureRedraw = true;
     } catch (runtime_error &e) {
       WARN("Compile error: %s", e.what());
@@ -129,6 +141,14 @@ struct App {
   }
 
   void update() {
+    if (winWidth != GetScreenWidth() || winHeight != GetScreenHeight()) {
+      winWidth = GetScreenWidth();
+      winHeight = GetScreenHeight();
+
+      UnloadRenderTexture(drawTexture);
+      init_render_texture();
+    }
+
     if (IsMouseButtonPressed(1)) {
       vstartx = GetMousePosition().x;
       vstarty = GetMousePosition().y;
@@ -143,7 +163,7 @@ struct App {
     auto command = textInput.update();
     if (command.has_value()) {
       try {
-        runLogo(command.value(), &vm);
+        runLogo(command.value(), &vm, &lastRenderTime);
         needDrawTextureRedraw = true;
       } catch (runtime_error &e) {
         WARN("Compile error: %s", e.what());
@@ -171,66 +191,69 @@ struct App {
     ImGui::Begin("Toolbar");
 
     drawToolbarVariables();
-    drawToolbarHelp();
     drawToolbarDebug();
+    drawToolbarHelp();
 
     ImGui::End();
     rlImGuiEnd();
   }
 
   void drawToolbarVariables() {
-    if (ImGui::CollapsingHeader("Variables", ImGuiTreeNodeFlags_DefaultOpen)) {
-      bool didChange{false};
-      int prevVstartx{vstartx};
-      int prevVstarty{vstarty};
-      int prevVstartangle{vstartangle};
+    bool didChange{false};
+    int prevVstartx{vstartx};
+    int prevVstarty{vstarty};
+    int prevVstartangle{vstartangle};
 
-      int intVarBackend[INTVARLIMIT];
-      assert(vm.intVars.size() < INTVARLIMIT);
-      float floatVarBackend[FLOATVARLIMIT];
-      assert(vm.floatVars.size() < FLOATVARLIMIT);
+    int intVarBackend[INTVARLIMIT];
+    assert(vm.intVars.size() < INTVARLIMIT);
+    float floatVarBackend[FLOATVARLIMIT];
+    assert(vm.floatVars.size() < FLOATVARLIMIT);
 
-      int i = 0;
-      for (auto &[k, v] : vm.intVars) {
-        intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+    int i = 0;
+    for (auto &[k, v] : vm.intVars) {
+      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
 
-        bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
+      bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
-        if (changed) {
-          didChange = true;
-          vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
-        }
-
-        i++;
+      if (changed) {
+        didChange = true;
+        vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
       }
 
-      int j = 0;
-      for (auto &[k, v] : vm.floatVars) {
-        floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
-
-        bool changed = ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
-
-        if (changed) {
-          didChange = true;
-          vm.frames.front().variables[k].floatVal = floatVarBackend[j];
-        }
-
-        j++;
-      }
-
-      ImGui::Separator();
-
-      ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
-      ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
-      ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
-
-      needScriptReload =
-          didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle;
+      i++;
     }
+
+    int j = 0;
+    for (auto &[k, v] : vm.floatVars) {
+      floatVarBackend[j] = vm.frames.front().variables[k].floatVal;
+
+      bool changed = ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
+
+      if (changed) {
+        didChange = true;
+        vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+      }
+
+      j++;
+    }
+
+    ImGui::Separator();
+
+    ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
+    ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
+    ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
+
+    needScriptReload = didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle;
   }
 
   void drawToolbarDebug() {
-    if (ImGui::CollapsingHeader("Debug")) {
+    if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Text("FPS: %d", GetFPS());
+      ImGui::Text("Edge count: %'lu", vm.history.size());
+      ImGui::Text("Render time: %.2f ms", lastRenderTime * 1000.f);
+
+      ImGui::Separator();
+
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Root variables:");
       ImGui::BulletText("Position -> x = %.2f y = %.2f", vm.pos.x, vm.pos.y);
       ImGui::BulletText("Angle -> %.2f", vm.angle);
@@ -264,9 +287,6 @@ struct App {
   void draw() const {
     DrawTextureEx(drawTexture.texture, Vector2Zero(), 0.f, 1.f / DRAW_TEXTURE_SCALE, WHITE);
 
-    DrawFPS(GetScreenWidth() - 100, 4);
-    DrawText(TextFormat("Line count: %d", vm.history.size()), GetScreenWidth() - 100, 28, 10, BLACK);
-
     textInput.draw();
 
     // Draw turtle (triangle).
@@ -277,23 +297,24 @@ struct App {
   }
 
   void draw_draw_texture() {
+    if (!needDrawTextureRedraw) return;
+
     Vector2 start{};
     Vector2 end{};
 
-    if (needDrawTextureRedraw) {
-      BeginTextureMode(drawTexture);
-      DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE, WHITE);
-      for (auto const &line : vm.history) {
-        start.x = line.from.x * DRAW_TEXTURE_SCALE;
-        start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
+    BeginTextureMode(drawTexture);
+    DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE, WHITE);
+    for (auto const &line : vm.history) {
+      start.x = line.from.x * DRAW_TEXTURE_SCALE;
+      start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
 
-        end.x = line.to.x * DRAW_TEXTURE_SCALE;
-        end.y = (GetScreenHeight() - line.to.y) * DRAW_TEXTURE_SCALE;
+      end.x = line.to.x * DRAW_TEXTURE_SCALE;
+      end.y = (GetScreenHeight() - line.to.y) * DRAW_TEXTURE_SCALE;
 
-        DrawLineEx(start, end, line.thickness * DRAW_TEXTURE_SCALE, line.color);
-      }
-      EndTextureMode();
-      needDrawTextureRedraw = false;
+      DrawLineEx(start, end, line.thickness * DRAW_TEXTURE_SCALE, line.color);
     }
+    EndTextureMode();
+
+    needDrawTextureRedraw = false;
   }
 };

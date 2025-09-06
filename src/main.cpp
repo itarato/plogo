@@ -1,3 +1,4 @@
+#include <clocale>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -8,6 +9,7 @@
 using namespace std;
 
 int main(int argc, char** args) {
+  setlocale(LC_ALL, "");
   srand(time(nullptr));
 
   config.win_w = 1024;
