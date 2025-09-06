@@ -15,16 +15,13 @@
 
 using namespace std;
 
-void log_va_list(const char* level, const char* fileName, int lineNo,
-                 const char* s, va_list args) {
-  printf("[%s][\x1b[93m%s\x1b[39m:\x1b[96m%d\x1b[0m] \x1b[94m", level, fileName,
-         lineNo);
+void log_va_list(const char* level, const char* fileName, int lineNo, const char* s, va_list args) {
+  printf("[%s][\x1b[93m%s\x1b[39m:\x1b[96m%d\x1b[0m] \x1b[94m", level, fileName, lineNo);
   vprintf(s, args);
   printf("\x1b[0m\n");
 }
 
-void log(const char* level, const char* fileName, int lineNo, const char* s,
-         ...) {
+void log(const char* level, const char* fileName, int lineNo, const char* s, ...) {
   va_list args;
   va_start(args, s);
   log_va_list(level, fileName, lineNo, s, args);
@@ -61,9 +58,15 @@ bool eqf(float a, float b, float epsilon = 0.005f) {
   return (fabs(a - b) < epsilon);
 }
 
-float randf() { return (float)(rand() & 0xFFFF) / 0xFFFF; }
-float randf(float min, float max) { return randf() * (max - min) + min; }
+float randf() {
+  return (float)(rand() & 0xFFFF) / 0xFFFF;
+}
+float randf(float min, float max) {
+  return randf() * (max - min) + min;
+}
 
 inline void assert_or_throw(bool cond, string msg) {
-  if (!cond) throw runtime_error(msg);
+  if (!cond) [[unlikely]] {
+    throw runtime_error(msg);
+  }
 }
