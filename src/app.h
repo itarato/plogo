@@ -21,10 +21,12 @@
 
 using namespace std;
 
-constexpr int SCRIPT_RELOAD_NO = 0;
-constexpr int SCRIPT_RELOAD_LIGHT = 1;
-constexpr int SCRIPT_RELOAD_LIGHT_AND_STATE = 2;
-constexpr int SCRIPT_RELOAD_FULL = 3;
+enum ScriptReload {
+  No,
+  Light,
+  Light_and_state,
+  Full,
+};
 
 constexpr int INTVARLIMIT = 64;
 constexpr int FLOATVARLIMIT = 64;
@@ -61,36 +63,8 @@ const vector<string> builtInFunctions{
 };
 
 struct App {
-  TextInput textInput{};
-  VM vm{};
-  RenderTexture2D drawTexture;
-
-  int vstartx{0};
-  int vstarty{0};
-  int vstartangle{0};
-
-  int needScriptReload{SCRIPT_RELOAD_NO};
-  bool needDrawTextureRedraw{false};
-
-  char *sourceFileName{nullptr};
-  chrono::time_point<chrono::file_clock> sourceFileUpdateTime{};
-
-  int intVarBackend[INTVARLIMIT];
-  float floatVarBackend[FLOATVARLIMIT];
-
-  int winWidth;
-  int winHeight;
-
-  float lastRenderTime{};
-
-  char sourceCode[2048]{};
-
-  bool showSourceCode{true};
-
   App() = default;
-
   App(const App &) = delete;
-
   App(App &&) = delete;
 
   void destruct_assets() {
@@ -100,7 +74,7 @@ struct App {
   void init() {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(config.win_w, config.win_h, "P-Logo V(0)");
-    SetTargetFPS(24);
+    SetTargetFPS(30);
 
     init_render_texture();
 
@@ -118,14 +92,12 @@ struct App {
     vstartangle = 0;
   }
 
-  void init_render_texture() {
-    drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
-    SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
-  }
-
   void loadSourceFile(char *_sourceFileName) {
     sourceFileName = _sourceFileName;
-    if (sourceFileName == nullptr) return;
+    if (sourceFileName == nullptr) {
+      TraceLog(LOG_ERROR, "Invalid file name (null)");
+      return;
+    }
 
     INFO("Loading script: %s", sourceFileName);
 
@@ -142,49 +114,8 @@ struct App {
       TraceLog(LOG_WARNING, "Source code exceeds input buffer size");
     }
 
-    needScriptReload = SCRIPT_RELOAD_FULL;
+    needScriptReload = ScriptReload::Full;
     scriptReload();
-  }
-
-  void scriptReload() {
-    INFO("Reloading script");
-
-    int i = 0;
-    for (auto &[k, v] : vm.intVars) {
-      vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
-      i++;
-    }
-
-    i = 0;
-    for (auto &[k, v] : vm.floatVars) {
-      vm.frames.front().variables[k].floatVal = floatVarBackend[i];
-      i++;
-    }
-
-    vm.reset(needScriptReload >= SCRIPT_RELOAD_FULL, needScriptReload >= SCRIPT_RELOAD_LIGHT_AND_STATE);
-
-    if (needScriptReload >= SCRIPT_RELOAD_LIGHT_AND_STATE) {
-      vm.pos.x = vstartx;
-      vm.pos.y = vstarty;
-      vm.angle = vstartangle;
-    }
-
-    runLogo(sourceCode, &vm, &lastRenderTime);
-    needDrawTextureRedraw = true;
-
-    i = 0;
-    for (auto &[k, v] : vm.intVars) {
-      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
-      i++;
-    }
-
-    i = 0;
-    for (auto &[k, v] : vm.floatVars) {
-      floatVarBackend[i] = vm.frames.front().variables[k].floatVal;
-      i++;
-    }
-
-    needScriptReload = SCRIPT_RELOAD_NO;
   }
 
   void run() {
@@ -210,6 +141,71 @@ struct App {
     CloseWindow();
   }
 
+ private:
+  TextInput textInput{};
+  VM vm{};
+  RenderTexture2D drawTexture;
+  int vstartx{0};
+  int vstarty{0};
+  int vstartangle{0};
+  int needScriptReload{ScriptReload::No};
+  bool needDrawTextureRedraw{false};
+  char *sourceFileName{nullptr};
+  chrono::time_point<chrono::file_clock> sourceFileUpdateTime{};
+  int intVarBackend[INTVARLIMIT];
+  float floatVarBackend[FLOATVARLIMIT];
+  int winWidth;
+  int winHeight;
+  float lastRenderTime{};
+  char sourceCode[2048]{};
+  bool showSourceCode{true};
+
+  void init_render_texture() {
+    drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
+    SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
+  }
+
+  void scriptReload() {
+    INFO("Reloading script");
+
+    int i = 0;
+    for (auto &[k, v] : vm.intVars) {
+      vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+      i++;
+    }
+
+    i = 0;
+    for (auto &[k, v] : vm.floatVars) {
+      vm.frames.front().variables[k].floatVal = floatVarBackend[i];
+      i++;
+    }
+
+    vm.reset(needScriptReload >= ScriptReload::Full, needScriptReload >= ScriptReload::Light_and_state);
+
+    if (needScriptReload >= ScriptReload::Light_and_state) {
+      vm.pos.x = vstartx;
+      vm.pos.y = vstarty;
+      vm.angle = vstartangle;
+    }
+
+    runLogo(sourceCode, &vm, &lastRenderTime);
+    needDrawTextureRedraw = true;
+
+    i = 0;
+    for (auto &[k, v] : vm.intVars) {
+      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+      i++;
+    }
+
+    i = 0;
+    for (auto &[k, v] : vm.floatVars) {
+      floatVarBackend[i] = vm.frames.front().variables[k].floatVal;
+      i++;
+    }
+
+    needScriptReload = ScriptReload::No;
+  }
+
   void update() {
     if (winWidth != GetScreenWidth() || winHeight != GetScreenHeight()) {
       winWidth = GetScreenWidth();
@@ -222,12 +218,12 @@ struct App {
     if (IsMouseButtonPressed(1)) {
       vstartx = GetMousePosition().x;
       vstarty = GetMousePosition().y;
-      needScriptReload = SCRIPT_RELOAD_LIGHT_AND_STATE;
+      needScriptReload = ScriptReload::Light_and_state;
     }
 
     checkSourceForUpdates();
 
-    if (needScriptReload > SCRIPT_RELOAD_NO) scriptReload();
+    if (needScriptReload > ScriptReload::No) scriptReload();
 
     if (!showSourceCode) {
       auto command = textInput.update();
@@ -247,7 +243,7 @@ struct App {
     }
   }
 
-  chrono::time_point<chrono::file_clock> getSourceFileUpdateTime() {
+  chrono::time_point<chrono::file_clock> getSourceFileUpdateTime() const {
     filesystem::path p{sourceFileName};
     return filesystem::last_write_time(p);
   }
@@ -280,6 +276,7 @@ struct App {
       bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
       if (changed) didChange = true;
+      vm.frames.front().variables[k].floatVal = static_cast<float>(intVarBackend[i]);
 
       i++;
     }
@@ -302,9 +299,9 @@ struct App {
     ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
     ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
 
-    if (needScriptReload == SCRIPT_RELOAD_NO &&
+    if (needScriptReload <= ScriptReload::Light &&
         (didChange || vstartx != prevVstartx || vstarty != prevVstarty || vstartangle != prevVstartangle)) {
-      needScriptReload = SCRIPT_RELOAD_LIGHT_AND_STATE;
+      needScriptReload = ScriptReload::Light_and_state;
     }
   }
 
@@ -315,9 +312,9 @@ struct App {
       ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
                                 ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32), ImGuiInputTextFlags_AllowTabInput);
 
-      if (ImGui::Button("Clear and run")) needScriptReload = SCRIPT_RELOAD_FULL;
+      if (ImGui::Button("Clear and run")) needScriptReload = ScriptReload::Full;
       ImGui::SameLine();
-      if (ImGui::Button("Run")) needScriptReload = SCRIPT_RELOAD_LIGHT;
+      if (ImGui::Button("Run")) needScriptReload = ScriptReload::Light;
     }
   }
 

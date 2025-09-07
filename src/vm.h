@@ -119,7 +119,7 @@ struct VM {
   }
 
   float rad() const {
-    return (angle / 180.0) * numbers::pi;
+    return angle * DEG2RAD;
   }
   void normalizeAngle() {
     angle = fmod(fmod(angle, 360) + 360.0f, 360);
