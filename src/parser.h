@@ -11,14 +11,13 @@ void assert_lexeme(Lexeme lexeme, LexemeKind kind, string v) {
   char msgbuf[128];
 
   if (lexeme.kind != kind) {
-    snprintf(msgbuf, 128, "Lexeme mismatch. Expected kind %d but got: %d",
-             static_cast<int>(kind), static_cast<int>(lexeme.kind));
+    snprintf(msgbuf, 128, "Lexeme mismatch. Expected kind %d but got: %d", static_cast<int>(kind),
+             static_cast<int>(lexeme.kind));
     throw runtime_error(msgbuf);
   }
 
   if (lexeme.v != v) {
-    snprintf(msgbuf, 128, "Lexeme mismatch. Expected value: %s but got: %s",
-             v.c_str(), lexeme.v.c_str());
+    snprintf(msgbuf, 128, "Lexeme mismatch. Expected value: %s but got: %s", v.c_str(), lexeme.v.c_str());
     throw runtime_error(msgbuf);
   }
 }
@@ -27,7 +26,8 @@ struct Parser {
   vector<Lexeme> lexemes;
   size_t ptr = 0;
 
-  Parser(vector<Lexeme> lexemes) : lexemes(lexemes) {}
+  Parser(vector<Lexeme> lexemes) : lexemes(lexemes) {
+  }
 
   Ast::Program parse() {
     vector<unique_ptr<Ast::Node>> statements;
@@ -46,8 +46,7 @@ struct Parser {
       return parse_fndef();
     } else if (peek().kind == LexemeKind::Keyword && peek().v == "if") {
       return parse_if();
-    } else if (peek().kind == LexemeKind::Name &&
-               (!isEnd(1) && peek(1).kind == LexemeKind::Assignment)) {
+    } else if (peek().kind == LexemeKind::Name && (!isEnd(1) && peek(1).kind == LexemeKind::Assignment)) {
       return parse_assign();
     } else {
       return parse_fncall();
@@ -90,9 +89,7 @@ struct Parser {
       assert_lexeme(next(), LexemeKind::BraceClose, "");
     }
 
-    return make_unique<Ast::IfNode>(std::move(condExpr),
-                                    std::move(trueStatements),
-                                    std::move(falseStatements));
+    return make_unique<Ast::IfNode>(std::move(condExpr), std::move(trueStatements), std::move(falseStatements));
   }
 
   unique_ptr<Ast::FnDefNode> parse_fndef() {
@@ -124,8 +121,7 @@ struct Parser {
 
     assert_lexeme(next(), LexemeKind::BraceClose, "");
 
-    return make_unique<Ast::FnDefNode>(nameToken.v, argNames,
-                                       std::move(statements));
+    return make_unique<Ast::FnDefNode>(nameToken.v, argNames, std::move(statements));
   }
 
   unique_ptr<Ast::LoopNode> parse_loop() {
@@ -182,6 +178,11 @@ struct Parser {
         }
       } else if (peek().kind == LexemeKind::String) {
         exprList.push_back(parse_expr_string());
+      } else if (peek().kind == LexemeKind::ParenOpen) {
+        next();
+        exprList.push_back(parse_expr());
+        if (peek().kind != LexemeKind::ParenClose) throw runtime_error("Paren expression is missing closing paren");
+        next();
       } else {
         throw runtime_error("Unexpected lexeme kind for expression");
       }
@@ -196,8 +197,7 @@ struct Parser {
       ops.push_back(nextOp);
     }
 
-    assert_or_throw(exprList.size() == ops.size() + 1,
-                    "Operator and operand counts does not align");
+    assert_or_throw(exprList.size() == ops.size() + 1, "Operator and operand counts does not align");
 
     while (!ops.empty()) {
       reduceBinOps(exprList, ops);
@@ -207,15 +207,13 @@ struct Parser {
     return std::move(exprList.back());
   }
 
-  void reduceBinOps(vector<unique_ptr<Ast::Expr>> &exprList,
-                    vector<string> &ops) {
+  void reduceBinOps(vector<unique_ptr<Ast::Expr>> &exprList, vector<string> &ops) {
     auto rhs = std::move(exprList.back());
     exprList.pop_back();
     auto lhs = std::move(exprList.back());
     exprList.pop_back();
 
-    unique_ptr<Ast::Expr> newExpr =
-        make_unique<Ast::BinOpExpr>(ops.back(), std::move(lhs), std::move(rhs));
+    unique_ptr<Ast::Expr> newExpr = make_unique<Ast::BinOpExpr>(ops.back(), std::move(lhs), std::move(rhs));
     ops.pop_back();
     exprList.push_back(std::move(newExpr));
   }
@@ -238,8 +236,12 @@ struct Parser {
     return make_unique<Ast::StringExpr>(val.v);
   }
 
-  bool isEnd() const { return ptr >= lexemes.size(); }
-  bool isEnd(int n) const { return ptr + n >= lexemes.size(); }
+  bool isEnd() const {
+    return ptr >= lexemes.size();
+  }
+  bool isEnd(int n) const {
+    return ptr + n >= lexemes.size();
+  }
   Lexeme peek() const {
     if (isEnd()) throw runtime_error("EOF when peeking lexeme");
 

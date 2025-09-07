@@ -22,12 +22,11 @@ namespace Ast {
 prog       = *statements
 statement  = fncall | if | fndef | assignment
 fncall     = name popen args pclose
-if         = if popen expr pclose bopen statement* bclose [else bopen statement*
-bclose]
+if         = if popen expr pclose bopen statement* bclose [else bopen statement bclose]
 fndef      = fn name popen args pclose bopen statement* bclose
 assignment = name assign expr
 args       = expr comma
-expr       = number | name | binop | fncall
+expr       = number | name | binop | fncall | popen expr pclose
 binop      = number op binop | name op binop
 
 **/
