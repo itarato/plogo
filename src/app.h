@@ -64,8 +64,8 @@ const vector<string> builtInFunctions{
 
 struct App {
   App() = default;
-  App(const App &) = delete;
-  App(App &&) = delete;
+  App(const App&) = delete;
+  App(App&&) = delete;
 
   void destruct_assets() {
     UnloadRenderTexture(drawTexture);
@@ -92,7 +92,7 @@ struct App {
     vstartangle = 0;
   }
 
-  void loadSourceFile(char *_sourceFileName) {
+  void loadSourceFile(char* _sourceFileName) {
     sourceFileName = _sourceFileName;
     if (sourceFileName == nullptr) {
       TraceLog(LOG_ERROR, "Invalid file name (null)");
@@ -150,7 +150,7 @@ struct App {
   int vstartangle{0};
   int needScriptReload{ScriptReload::No};
   bool needDrawTextureRedraw{false};
-  char *sourceFileName{nullptr};
+  char* sourceFileName{nullptr};
   chrono::time_point<chrono::file_clock> sourceFileUpdateTime{};
   int intVarBackend[INTVARLIMIT];
   float floatVarBackend[FLOATVARLIMIT];
@@ -169,13 +169,13 @@ struct App {
     INFO("Reloading script");
 
     int i = 0;
-    for (auto &[k, v] : vm.intVars) {
+    for (auto& [k, v] : vm.intVars) {
       vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
       i++;
     }
 
     i = 0;
-    for (auto &[k, v] : vm.floatVars) {
+    for (auto& [k, v] : vm.floatVars) {
       vm.frames.front().variables[k].floatVal = floatVarBackend[i];
       i++;
     }
@@ -192,13 +192,13 @@ struct App {
     needDrawTextureRedraw = true;
 
     i = 0;
-    for (auto &[k, v] : vm.intVars) {
+    for (auto& [k, v] : vm.intVars) {
       intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
       i++;
     }
 
     i = 0;
-    for (auto &[k, v] : vm.floatVars) {
+    for (auto& [k, v] : vm.floatVars) {
       floatVarBackend[i] = vm.frames.front().variables[k].floatVal;
       i++;
     }
@@ -251,6 +251,7 @@ struct App {
   void drawPanel() {
     rlImGuiBegin();
     ImGui::Begin("Toolbar");
+    ImGui::GetIO().FontGlobalScale = 1;
 
     drawToolbarVariables();
     drawSourceCode();
@@ -272,7 +273,7 @@ struct App {
     assert(vm.floatVars.size() < FLOATVARLIMIT);
 
     int i = 0;
-    for (auto &[k, v] : vm.intVars) {
+    for (auto& [k, v] : vm.intVars) {
       bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
       if (changed) didChange = true;
@@ -282,7 +283,7 @@ struct App {
     }
 
     int j = 0;
-    for (auto &[k, v] : vm.floatVars) {
+    for (auto& [k, v] : vm.floatVars) {
       bool changed = ImGui::SliderFloat(k.c_str(), floatVarBackend + j, v.min, v.max);
 
       if (changed) {
@@ -309,8 +310,11 @@ struct App {
     showSourceCode = ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen);
 
     if (showSourceCode) {
-      ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
-                                ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32), ImGuiInputTextFlags_AllowTabInput);
+      if (ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
+                                    ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32),
+                                    ImGuiInputTextFlags_AllowTabInput)) {
+        needScriptReload = ScriptReload::Full;
+      }
 
       if (ImGui::Button("Clear and run")) needScriptReload = ScriptReload::Full;
       ImGui::SameLine();
@@ -334,7 +338,7 @@ struct App {
       ImGui::Separator();
 
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Top frame variables:");
-      for (auto &[k, v] : vm.frames.front().variables) {
+      for (auto& [k, v] : vm.frames.front().variables) {
         ImGui::BulletText("%s = %.2f", k.c_str(), v.floatVal);
       }
     }
@@ -349,7 +353,7 @@ struct App {
   void drawToolbarHelp() {
     if (ImGui::CollapsingHeader("Reference")) {
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Custom functions:");
-      for (auto &[k, v] : vm.functions) {
+      for (auto& [k, v] : vm.functions) {
         string signature{k};
         signature += "(";
 
@@ -391,7 +395,7 @@ struct App {
 
     BeginTextureMode(drawTexture);
     DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE, WHITE);
-    for (auto const &line : vm.history) {
+    for (auto const& line : vm.history) {
       start.x = line.from.x * DRAW_TEXTURE_SCALE;
       start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
 
