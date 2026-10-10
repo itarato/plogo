@@ -32,7 +32,7 @@ binop      = number op binop | name op binop
 **/
 
 struct Node {
-  virtual void execute(VM *vm) = 0;
+  virtual void execute(VM* vm) = 0;
   virtual ~Node() {
   }
 };
@@ -43,8 +43,8 @@ struct Program : Node {
   Program(vector<unique_ptr<Node>> statements) : statements(std::move(statements)) {
   }
 
-  void execute(VM *vm) {
-    for (auto &stmt : statements) {
+  void execute(VM* vm) {
+    for (auto& stmt : statements) {
       stmt->execute(vm);
     }
   }
@@ -64,7 +64,7 @@ struct FloatExpr : Expr {
   FloatExpr(float v) : floatValue(v) {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
   }
 
   Value value() const {
@@ -82,7 +82,7 @@ struct NameExpr : Expr {
   NameExpr(string name) : name(name) {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
     v = vm->frames.back().variables[name];
   }
 
@@ -100,7 +100,7 @@ struct StringExpr : Expr {
   StringExpr(string s) : stringValue(s) {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
   }
 
   Value value() const {
@@ -159,7 +159,7 @@ struct BinOpExpr : Expr {
   ~BinOpExpr() {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
     lhs->execute(vm);
     rhs->execute(vm);
     Value lhsVal = lhs->value();
@@ -216,7 +216,7 @@ struct AssignmentNode : Node {
   ~AssignmentNode() {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
     rval->execute(vm);
     vm->frames.back().variables[lval->name] = rval->value();
   }
@@ -233,7 +233,7 @@ struct LoopNode : Node {
   ~LoopNode() {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
     char loopVarNameBuf[8];
     snprintf(loopVarNameBuf, 8, "_i%d", vm->frames.back().loopCount++);
     string loopVarName{loopVarNameBuf};
@@ -248,7 +248,7 @@ struct LoopNode : Node {
     for (unsigned int i = 0; i < iter; i++) {
       vm->frames.back().variables[loopVarName] = Value((float)i);
 
-      for (auto &statement : statements) {
+      for (auto& statement : statements) {
         statement->execute(vm);
       }
     }
@@ -271,16 +271,16 @@ struct IfNode : Node {
   ~IfNode() {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
     condNode->execute(vm);
     assert_or_throw(condNode->value().kind == ValueKind::Boolean, "Not bool for IF condition");
 
     if (condNode->value().boolVal) {
-      for (auto &statement : trueStatements) {
+      for (auto& statement : trueStatements) {
         statement->execute(vm);
       }
     } else {
-      for (auto &statement : falseStatements) {
+      for (auto& statement : falseStatements) {
         statement->execute(vm);
       }
     }
@@ -298,8 +298,8 @@ struct ExecutableFnNode : Node {
   ~ExecutableFnNode() {
   }
 
-  void execute(VM *vm) {
-    for (auto &statement : statements) {
+  void execute(VM* vm) {
+    for (auto& statement : statements) {
       statement->execute(vm);
     }
   }
@@ -315,7 +315,7 @@ struct FnDefNode : Node {
   ~FnDefNode() {
   }
 
-  void execute(VM *vm) {
+  void execute(VM* vm) {
     vm->functions[name] = fn;
   }
 };
@@ -345,6 +345,7 @@ enum FnName {
   FN_PUSH,
   FN_POP,
   FN_LINE,
+  FN_COLOR,
   FN_UNKNOWN,
 };
 
@@ -404,13 +405,15 @@ struct FnCallNode : Expr {
       knownFnName = FnName::FN_POP;
     } else if (fnNameOriginal == "line") {
       knownFnName = FnName::FN_LINE;
+    } else if (fnNameOriginal == "color" || fnNameOriginal == "colour" || fnNameOriginal == "col") {
+      knownFnName = FnName::FN_COLOR;
     } else {
       knownFnName = FnName::FN_UNKNOWN;
     }
   }
 
-  void execute(VM *vm) {
-    for (auto &arg : args) arg->execute(vm);
+  void execute(VM* vm) {
+    for (auto& arg : args) arg->execute(vm);
 
     string name;
 
@@ -525,13 +528,13 @@ struct FnCallNode : Expr {
         v = Value(vm->angle);
         break;
       case FnName::FN_DEBUG:
-        for (auto &arg : args) {
+        for (auto& arg : args) {
           arg->execute(vm);
           arg->value().debug();
         }
         break;
       case FnName::FN_PUSH:
-        for (auto &arg : args) {
+        for (auto& arg : args) {
           vm->stack.push_back(arg->value());
         }
         break;
@@ -551,6 +554,20 @@ struct FnCallNode : Expr {
         vm->history.emplace_back(Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
                                  Vector2{args[2]->value().floatVal, args[3]->value().floatVal}, vm->thickness,
                                  vm->color);
+        break;
+      case FN_COLOR:
+        if (args.size() == 1) {
+          if (args[0]->value().kind == ValueKind::Number) {
+            int color_index = (int)args[0]->value().floatVal;
+            if (color_index >= 0 && color_index <= MAX_COLORS_COUNT) {
+              vm->color = colors[color_index];
+            } else {
+              throw runtime_error("Color index out of range (0..20)");
+            }
+          }
+        } else {
+          throw runtime_error("Invalid color argument");
+        }
         break;
       default:
         if (!vm->functions.contains(fnNameOriginal)) {

@@ -15,6 +15,15 @@
 
 using namespace std;
 
+constexpr int MAX_COLORS_COUNT = 21;
+Color colors[MAX_COLORS_COUNT] = {DARKGRAY,  MAROON, ORANGE, DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN,
+                                  GRAY,      RED,    GOLD,   LIME,      BLUE,     VIOLET,     BROWN,
+                                  LIGHTGRAY, PINK,   YELLOW, GREEN,     SKYBLUE,  PURPLE,     BEIGE};
+const char* colorNames[MAX_COLORS_COUNT] = {"DARKGRAY",  "MAROON", "ORANGE",    "DARKGREEN", "DARKBLUE", "DARKPURPLE",
+                                            "DARKBROWN", "GRAY",   "RED",       "GOLD",      "LIME",     "BLUE",
+                                            "VIOLET",    "BROWN",  "LIGHTGRAY", "PINK",      "YELLOW",   "GREEN",
+                                            "SKYBLUE",   "PURPLE", "BEIGE"};
+
 namespace Ast {
 struct ExecutableFnNode;
 }  // namespace Ast
