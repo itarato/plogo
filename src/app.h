@@ -45,6 +45,7 @@ const vector<string> builtInFunctions{
     "[p]os(NUM, NUM)",
     "[a]ngle(NUM)",
     "[t]hickness(NUM)",
+    "[col]or(NUM)",
     "[c]lear()",
     "rand(NUM, NUM) -> NUM",
     "intvar(STR, NUM, NUM, NUM)",
