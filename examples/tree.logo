@@ -1,3 +1,9 @@
+intvar("size", 10, 1000, 200)
+intvar("angle", 0, 360, 30)
+intvar("th", 1, 100, 20)
+floatvar("dec", 1.1, 5.0, 1.4)
+intvar("lim", 1, 500, 4)
+
 fn branch(size, angle, thick, dec, limit) {
     t(thick)
     f(size)
@@ -14,5 +20,4 @@ fn branch(size, angle, thick, dec, limit) {
     b(size)
 }
 
-pos(512, 700)
-branch(200, 30, 20, 1.4, 4)
+branch(size, angle, th, dec, lim)

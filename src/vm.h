@@ -90,6 +90,8 @@ struct VM {
     intVars.clear();
     floatVars.clear();
     stack.clear();
+    color = BLACK;
+    thickness = 1.0;
 
     if (clearState) {
       history.clear();

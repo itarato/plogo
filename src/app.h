@@ -252,7 +252,6 @@ struct App {
   void drawPanel() {
     rlImGuiBegin();
     ImGui::Begin("Toolbar");
-    ImGui::GetIO().FontGlobalScale = 1;
 
     drawToolbarVariables();
     drawSourceCode();
@@ -311,11 +310,13 @@ struct App {
     showSourceCode = ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen);
 
     if (showSourceCode) {
+      ImGui::SetWindowFontScale(2.0f);
       if (ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
                                     ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32),
                                     ImGuiInputTextFlags_AllowTabInput)) {
         needScriptReload = ScriptReload::Full;
       }
+      ImGui::SetWindowFontScale(1.0f);
 
       if (ImGui::Button("Clear and run")) needScriptReload = ScriptReload::Full;
       ImGui::SameLine();
