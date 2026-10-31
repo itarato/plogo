@@ -6,3 +6,6 @@ test_logo
 imgui.ini
 plogo
 test
+*.obj
+build
+dist

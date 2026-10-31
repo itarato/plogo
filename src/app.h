@@ -107,7 +107,7 @@ struct App {
     std::string fileContent;
     std::getline(std::ifstream(sourceFileName), fileContent, '\0');
 
-    bzero(sourceCode, sizeof(sourceCode));
+    std::memset(sourceCode, 0, sizeof(sourceCode));
     TraceLog(LOG_INFO, "Zero %d bytes", sizeof(sourceCode));
     if (sizeof(sourceCode) > fileContent.size()) {
       strncpy(sourceCode, fileContent.c_str(), fileContent.size());

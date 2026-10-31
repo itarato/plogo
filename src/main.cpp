@@ -8,7 +8,7 @@
 using namespace std;
 
 int main(int argc, char** args) {
-  srand(time(nullptr));
+  srand(static_cast<int>(time(nullptr)));
 
   config.win_w = 1024;
   config.win_h = 768;
