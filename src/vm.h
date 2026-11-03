@@ -24,6 +24,9 @@ const char* colorNames[MAX_COLORS_COUNT] = {"DARKGRAY",  "MAROON", "ORANGE",    
                                             "VIOLET",    "BROWN",  "LIGHTGRAY", "PINK",      "YELLOW",   "GREEN",
                                             "SKYBLUE",   "PURPLE", "BEIGE"};
 
+constexpr int STACK_LIMIT = 255;
+constexpr int HISTORY_LIMIT = 1000000;
+
 namespace Ast {
 struct ExecutableFnNode;
 }  // namespace Ast
@@ -61,8 +64,6 @@ struct VM {
   float thickness = 1.0;
   Color color = BLACK;
 
-  vector<Frame> frames{};
-  vector<Line> history{};
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
   unordered_map<string, IntVar> intVars{};
@@ -108,7 +109,7 @@ struct VM {
     pos.x += sinf(rad()) * v;
     pos.y += cosf(rad()) * -v;
 
-    if (isDown) history.emplace_back(prevPos, pos, thickness, color);
+    if (isDown) add_line(Line(prevPos, pos, thickness, color));
   }
 
   void backward(float v) {
@@ -132,7 +133,45 @@ struct VM {
   float rad() const {
     return angle * DEG2RAD;
   }
+
   void normalizeAngle() {
     angle = fmod(fmod(angle, 360) + 360.0f, 360);
   }
+
+  Frame& top_frame() {
+    return frames.front();
+  }
+
+  Frame& bottom_frame() {
+    return frames.back();
+  }
+
+  [[nodiscard]] bool try_push_frame(Frame&& frame) {
+    if (frames.size() >= STACK_LIMIT) return false;
+
+    frames.push_back(std::move(frame));
+    return true;
+  }
+
+  void pop_frame() {
+    frames.pop_back();
+  }
+
+  constexpr std::size_t history_size() const {
+    return history.size();
+  }
+
+  void add_line(Line&& line) {
+    if (history.size() > HISTORY_LIMIT) THROW("Too many lines");
+
+    history.push_back(std::move(line));
+  }
+
+  constexpr std::vector<Line> const& get_history() const {
+    return history;
+  }
+
+ private:
+  vector<Frame> frames{};
+  vector<Line> history{};
 };

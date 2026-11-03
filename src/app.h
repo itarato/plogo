@@ -171,13 +171,13 @@ struct App {
 
     int i = 0;
     for (auto& [k, v] : vm.intVars) {
-      vm.frames.front().variables[k].floatVal = (float)intVarBackend[i];
+      vm.top_frame().variables[k].floatVal = (float)intVarBackend[i];
       i++;
     }
 
     i = 0;
     for (auto& [k, v] : vm.floatVars) {
-      vm.frames.front().variables[k].floatVal = floatVarBackend[i];
+      vm.top_frame().variables[k].floatVal = floatVarBackend[i];
       i++;
     }
 
@@ -194,13 +194,13 @@ struct App {
 
     i = 0;
     for (auto& [k, v] : vm.intVars) {
-      intVarBackend[i] = (int)vm.frames.front().variables[k].floatVal;
+      intVarBackend[i] = (int)vm.top_frame().variables[k].floatVal;
       i++;
     }
 
     i = 0;
     for (auto& [k, v] : vm.floatVars) {
-      floatVarBackend[i] = vm.frames.front().variables[k].floatVal;
+      floatVarBackend[i] = vm.top_frame().variables[k].floatVal;
       i++;
     }
 
@@ -277,7 +277,7 @@ struct App {
       bool changed = ImGui::SliderInt(k.c_str(), intVarBackend + i, v.min, v.max);
 
       if (changed) didChange = true;
-      vm.frames.front().variables[k].floatVal = static_cast<float>(intVarBackend[i]);
+      vm.top_frame().variables[k].floatVal = static_cast<float>(intVarBackend[i]);
 
       i++;
     }
@@ -288,7 +288,7 @@ struct App {
 
       if (changed) {
         didChange = true;
-        vm.frames.front().variables[k].floatVal = floatVarBackend[j];
+        vm.top_frame().variables[k].floatVal = floatVarBackend[j];
       }
 
       j++;
@@ -327,7 +327,7 @@ struct App {
   void drawToolbarDebug() {
     if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Text("FPS: %d", GetFPS());
-      ImGui::Text("Edge count: %lu", vm.history.size());
+      ImGui::Text("Edge count: %lu", vm.history_size());
       ImGui::Text("Render time: %.2f ms", lastRenderTime * 1000.f);
 
       ImGui::Separator();
@@ -340,7 +340,7 @@ struct App {
       ImGui::Separator();
 
       ImGui::TextColored({1.0, 1.0, 0.6, 1.0}, "Top frame variables:");
-      for (auto& [k, v] : vm.frames.front().variables) {
+      for (auto& [k, v] : vm.top_frame().variables) {
         ImGui::BulletText("%s = %.2f", k.c_str(), v.floatVal);
       }
     }
@@ -397,7 +397,7 @@ struct App {
 
     BeginTextureMode(drawTexture);
     DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE, WHITE);
-    for (auto const& line : vm.history) {
+    for (auto const& line : vm.get_history()) {
       start.x = line.from.x * DRAW_TEXTURE_SCALE;
       start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
 

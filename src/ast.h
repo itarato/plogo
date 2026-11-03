@@ -83,7 +83,7 @@ struct NameExpr : Expr {
   }
 
   void execute(VM* vm) {
-    v = vm->frames.back().variables[name];
+    v = vm->bottom_frame().variables[name];
   }
 
   Value value() const {
@@ -218,7 +218,7 @@ struct AssignmentNode : Node {
 
   void execute(VM* vm) {
     rval->execute(vm);
-    vm->frames.back().variables[lval->name] = rval->value();
+    vm->bottom_frame().variables[lval->name] = rval->value();
   }
 };
 
@@ -235,7 +235,7 @@ struct LoopNode : Node {
 
   void execute(VM* vm) {
     char loopVarNameBuf[8];
-    snprintf(loopVarNameBuf, 8, "_i%d", vm->frames.back().loopCount++);
+    snprintf(loopVarNameBuf, 8, "_i%d", vm->bottom_frame().loopCount++);
     string loopVarName{loopVarNameBuf};
 
     count->execute(vm);
@@ -246,14 +246,14 @@ struct LoopNode : Node {
 
     unsigned int iter = (unsigned int)count->value().floatVal;
     for (unsigned int i = 0; i < iter; i++) {
-      vm->frames.back().variables[loopVarName] = Value((float)i);
+      vm->bottom_frame().variables[loopVarName] = Value((float)i);
 
       for (auto& statement : statements) {
         statement->execute(vm);
       }
     }
 
-    vm->frames.back().loopCount--;
+    vm->bottom_frame().loopCount--;
   }
 };
 
@@ -481,8 +481,8 @@ struct FnCallNode : Expr {
         // fully put Logo structs (non ref / non pointer) into VM.
         name = args[0]->value().strVal;
         vm->intVars[name] = IntVar{(int)args[1]->value().floatVal, (int)args[2]->value().floatVal};
-        if (!vm->frames.front().variables.contains(name)) {
-          vm->frames.front().variables[name] = args[3]->value();
+        if (!vm->top_frame().variables.contains(name)) {
+          vm->top_frame().variables[name] = args[3]->value();
         }
         break;
       case FnName::FN_FLOATVAR:
@@ -495,8 +495,8 @@ struct FnCallNode : Expr {
         // fully put Logo structs (non ref / non pointer) into VM.
         name = args[0]->value().strVal;
         vm->floatVars[name] = FloatVar{args[1]->value().floatVal, args[2]->value().floatVal};
-        if (!vm->frames.front().variables.contains(name)) {
-          vm->frames.front().variables[name] = args[3]->value();
+        if (!vm->top_frame().variables.contains(name)) {
+          vm->top_frame().variables[name] = args[3]->value();
         }
         break;
       case FnName::FN_GETX:
@@ -551,9 +551,8 @@ struct FnCallNode : Expr {
         assert_or_throw(args[1]->value().kind == ValueKind::Number, "intvar expects a number arg");
         assert_or_throw(args[2]->value().kind == ValueKind::Number, "intvar expects a number arg");
         assert_or_throw(args[3]->value().kind == ValueKind::Number, "intvar expects a number arg");
-        vm->history.emplace_back(Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
-                                 Vector2{args[2]->value().floatVal, args[3]->value().floatVal}, vm->thickness,
-                                 vm->color);
+        vm->add_line(Line(Vector2{args[0]->value().floatVal, args[1]->value().floatVal},
+                          Vector2{args[2]->value().floatVal, args[3]->value().floatVal}, vm->thickness, vm->color));
         break;
       case FN_COLOR:
         if (args.size() == 1) {
@@ -584,9 +583,13 @@ struct FnCallNode : Expr {
           newFrame.variables[fn->argNames[i]] = args[i]->value();
         }
 
-        vm->frames.push_back(newFrame);
+        if (!vm->try_push_frame(std::move(newFrame))) {
+          THROW("Stackoverflow");
+        }
+
         fn->execute(vm);
-        vm->frames.pop_back();
+        vm->pop_frame();
+
         break;
     }
   }
