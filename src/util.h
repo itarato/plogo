@@ -1,12 +1,19 @@
 #pragma once
 
-#include <algorithm>
 #include <cstdlib>
 #include <list>
 #include <memory>
-#include <vector>
 
 #include "raylib.h"
+
+constexpr int MAX_COLORS_COUNT = 25;
+Color colors[MAX_COLORS_COUNT] = {
+    WHITE, BLACK, MAGENTA, RAYWHITE, DARKGRAY, MAROON,    ORANGE, DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN, GRAY, RED,
+    GOLD,  LIME,  BLUE,    VIOLET,   BROWN,    LIGHTGRAY, PINK,   YELLOW,    GREEN,    SKYBLUE,    PURPLE,    BEIGE};
+const char* colorNames[MAX_COLORS_COUNT] = {
+    "WHITE",      "BLACK",     "MAGENTA", "RAYTWHITE", "DARKGRAY", "MAROON", "ORANGE", "DARKGREEN", "DARKBLUE",
+    "DARKPURPLE", "DARKBROWN", "GRAY",    "RED",       "GOLD",     "LIME",   "BLUE",   "VIOLET",    "BROWN",
+    "LIGHTGRAY",  "PINK",      "YELLOW",  "GREEN",     "SKYBLUE",  "PURPLE", "BEIGE"};
 
 #define INFO(...) log("\x1b[90mINFO\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)
 #define WARN(...) log("\x1b[93mWARN\x1b[0m", __FILE__, __LINE__, __VA_ARGS__)

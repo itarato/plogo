@@ -127,7 +127,7 @@ struct App {
 
       BeginDrawing();
 
-      ClearBackground(RAYWHITE);
+      ClearBackground(colors[backgroundColorIndex]);
 
       draw();
       drawPanel();
@@ -160,6 +160,7 @@ struct App {
   float lastRenderTime{};
   char sourceCode[2048]{};
   bool showSourceCode{true};
+  int backgroundColorIndex{0};
 
   void init_render_texture() {
     drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
@@ -296,6 +297,8 @@ struct App {
 
     ImGui::Separator();
 
+    ImGui::Combo("Background", &backgroundColorIndex, colorNames, IM_ARRAYSIZE(colorNames));
+
     ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
     ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
     ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
@@ -396,7 +399,9 @@ struct App {
     Vector2 end{};
 
     BeginTextureMode(drawTexture);
-    DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE, WHITE);
+    DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE,
+                  colors[backgroundColorIndex]);
+
     for (auto const& line : vm.get_history()) {
       start.x = line.from.x * DRAW_TEXTURE_SCALE;
       start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;

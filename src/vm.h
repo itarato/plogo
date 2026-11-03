@@ -11,18 +11,10 @@
 
 #include "ast.h"
 #include "raylib.h"
+#include "util.h"
 #include "value.h"
 
 using namespace std;
-
-constexpr int MAX_COLORS_COUNT = 21;
-Color colors[MAX_COLORS_COUNT] = {DARKGRAY,  MAROON, ORANGE, DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN,
-                                  GRAY,      RED,    GOLD,   LIME,      BLUE,     VIOLET,     BROWN,
-                                  LIGHTGRAY, PINK,   YELLOW, GREEN,     SKYBLUE,  PURPLE,     BEIGE};
-const char* colorNames[MAX_COLORS_COUNT] = {"DARKGRAY",  "MAROON", "ORANGE",    "DARKGREEN", "DARKBLUE", "DARKPURPLE",
-                                            "DARKBROWN", "GRAY",   "RED",       "GOLD",      "LIME",     "BLUE",
-                                            "VIOLET",    "BROWN",  "LIGHTGRAY", "PINK",      "YELLOW",   "GREEN",
-                                            "SKYBLUE",   "PURPLE", "BEIGE"};
 
 constexpr int STACK_LIMIT = 255;
 constexpr int HISTORY_LIMIT = 1000000;
