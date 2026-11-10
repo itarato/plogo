@@ -161,6 +161,7 @@ struct App {
   float lastRenderTime{};
   char sourceCode[2048]{};
   bool showSourceCode{true};
+  float editorFontSize{1.0f};
 
   void init_render_texture() {
     drawTexture = LoadRenderTexture(config.VirtualWindowWidth() * DRAW_TEXTURE_SCALE,
@@ -321,7 +322,15 @@ struct App {
     showSourceCode = ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen);
 
     if (showSourceCode) {
-      ImGui::SetWindowFontScale(2.0f);
+      if (ImGui::Button("Toggle font size")) {
+        if (editorFontSize < 1.5f) {
+          editorFontSize = 2.0f;
+        } else {
+          editorFontSize = 1.0f;
+        }
+      }
+
+      ImGui::SetWindowFontScale(editorFontSize);
       if (ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
                                     ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32),
                                     ImGuiInputTextFlags_AllowTabInput)) {
