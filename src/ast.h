@@ -346,6 +346,7 @@ enum FnName {
   FN_POP,
   FN_LINE,
   FN_COLOR,
+  FN_BACKGROUND_COLOR,
   FN_UNKNOWN,
 };
 
@@ -407,6 +408,8 @@ struct FnCallNode : Expr {
       knownFnName = FnName::FN_LINE;
     } else if (fnNameOriginal == "color" || fnNameOriginal == "colour" || fnNameOriginal == "col") {
       knownFnName = FnName::FN_COLOR;
+    } else if (fnNameOriginal == "background" || fnNameOriginal == "bg") {
+      knownFnName = FnName::FN_BACKGROUND_COLOR;
     } else {
       knownFnName = FnName::FN_UNKNOWN;
     }
@@ -509,19 +512,19 @@ struct FnCallNode : Expr {
         break;
       case FnName::FN_WINW:
         assert_or_throw(args.size() == 0, "Expected 0 args");
-        v = Value((float)(GetScreenWidth()));
+        v = Value((float)(config.VirtualWindowWidth()));
         break;
       case FnName::FN_WINH:
         assert_or_throw(args.size() == 0, "Expected 0 args");
-        v = Value((float)(GetScreenHeight()));
+        v = Value((float)(config.VirtualWindowHeight()));
         break;
       case FnName::FN_MIDX:
         assert_or_throw(args.size() == 0, "Expected 0 args");
-        v = Value((float)(GetScreenWidth() >> 1));
+        v = Value((float)(config.VirtualWindowWidth() >> 1));
         break;
       case FnName::FN_MIDY:
         assert_or_throw(args.size() == 0, "Expected 0 args");
-        v = Value((float)(GetScreenHeight() >> 1));
+        v = Value((float)(config.VirtualWindowHeight() >> 1));
         break;
       case FnName::FN_GETANGLE:
         assert_or_throw(args.size() == 0, "Expected 0 args");
@@ -561,7 +564,21 @@ struct FnCallNode : Expr {
             if (color_index >= 0 && color_index <= MAX_COLORS_COUNT) {
               vm->color = colors[color_index];
             } else {
-              throw runtime_error("Color index out of range (0..20)");
+              throw runtime_error("Color index out of range");
+            }
+          }
+        } else {
+          throw runtime_error("Invalid color argument");
+        }
+        break;
+      case FN_BACKGROUND_COLOR:
+        if (args.size() == 1) {
+          if (args[0]->value().kind == ValueKind::Number) {
+            int color_index = (int)args[0]->value().floatVal;
+            if (color_index >= 0 && color_index <= MAX_COLORS_COUNT) {
+              vm->backgroundColor = colors[color_index];
+            } else {
+              throw runtime_error("Color index out of range");
             }
           }
         } else {

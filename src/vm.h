@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "ast.h"
+#include "config.h"
 #include "raylib.h"
 #include "util.h"
 #include "value.h"
@@ -55,6 +56,7 @@ struct VM {
   bool isDown = true;
   float thickness = 1.0;
   Color color = BLACK;
+  Color backgroundColor = RAYWHITE;
 
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 
@@ -90,8 +92,8 @@ struct VM {
       history.clear();
       angle = 0.0f;
       isDown = true;
-      pos.x = GetScreenWidth() >> 1;
-      pos.y = GetScreenHeight() >> 1;
+      pos.x = config.VirtualWindowWidth() >> 1;
+      pos.y = config.VirtualWindowHeight() >> 1;
     }
   }
 

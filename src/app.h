@@ -46,6 +46,7 @@ const vector<string> builtInFunctions{
     "[a]ngle(NUM)",
     "[t]hickness(NUM)",
     "[col]or(NUM)",
+    "[bg](NUM)",
     "[c]lear()",
     "rand(NUM, NUM) -> NUM",
     "intvar(STR, NUM, NUM, NUM)",
@@ -83,13 +84,13 @@ struct App {
 
     textInput.init();
 
-    winWidth = GetScreenWidth();
-    winHeight = GetScreenHeight();
+    winWidth = config.VirtualWindowWidth();
+    winHeight = config.VirtualWindowHeight();
 
     vm.reset();
 
-    vstartx = GetScreenWidth() >> 1;
-    vstarty = GetScreenHeight() >> 1;
+    vstartx = config.VirtualWindowWidth() >> 1;
+    vstarty = config.VirtualWindowHeight() >> 1;
     vstartangle = 0;
   }
 
@@ -127,7 +128,7 @@ struct App {
 
       BeginDrawing();
 
-      ClearBackground(colors[backgroundColorIndex]);
+      ClearBackground(vm.backgroundColor);
 
       draw();
       drawPanel();
@@ -160,10 +161,10 @@ struct App {
   float lastRenderTime{};
   char sourceCode[2048]{};
   bool showSourceCode{true};
-  int backgroundColorIndex{0};
 
   void init_render_texture() {
-    drawTexture = LoadRenderTexture(GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE);
+    drawTexture = LoadRenderTexture(config.VirtualWindowWidth() * DRAW_TEXTURE_SCALE,
+                                    config.VirtualWindowHeight() * DRAW_TEXTURE_SCALE);
     SetTextureFilter(drawTexture.texture, TEXTURE_FILTER_TRILINEAR);
   }
 
@@ -209,16 +210,18 @@ struct App {
   }
 
   void update() {
-    if (winWidth != GetScreenWidth() || winHeight != GetScreenHeight()) {
-      winWidth = GetScreenWidth();
-      winHeight = GetScreenHeight();
+    if (winWidth != config.VirtualWindowWidth() || winHeight != config.VirtualWindowHeight()) {
+      winWidth = config.VirtualWindowWidth();
+      winHeight = config.VirtualWindowHeight();
 
       UnloadRenderTexture(drawTexture);
       init_render_texture();
+
+      needScriptReload = ScriptReload::Light;
     }
 
     if (IsMouseButtonPressed(1)) {
-      vstartx = GetMousePosition().x;
+      vstartx = GetMousePosition().x - config.liveToolbarWidth;
       vstarty = GetMousePosition().y;
       needScriptReload = ScriptReload::Light_and_state;
     }
@@ -252,7 +255,14 @@ struct App {
 
   void drawPanel() {
     rlImGuiBegin();
-    ImGui::Begin("Toolbar");
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(config.liveToolbarWidth, viewport->WorkSize.y));
+    ImGui::Begin("Toolbar", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
+
+    ImVec2 main_window_size = ImGui::GetWindowSize();
+    config.liveToolbarWidth = main_window_size.x;
 
     drawToolbarVariables();
     drawSourceCode();
@@ -297,10 +307,8 @@ struct App {
 
     ImGui::Separator();
 
-    ImGui::Combo("Background", &backgroundColorIndex, colorNames, IM_ARRAYSIZE(colorNames));
-
-    ImGui::SliderInt("Start x", &vstartx, 0, GetScreenWidth());
-    ImGui::SliderInt("Start y", &vstarty, 0, GetScreenHeight());
+    ImGui::SliderInt("Start x", &vstartx, 0, config.VirtualWindowWidth());
+    ImGui::SliderInt("Start y", &vstarty, 0, config.VirtualWindowHeight());
     ImGui::SliderInt("Start angle", &vstartangle, 0, 360);
 
     if (needScriptReload <= ScriptReload::Light &&
@@ -381,14 +389,17 @@ struct App {
   }
 
   void draw() const {
-    DrawTextureEx(drawTexture.texture, Vector2Zero(), 0.f, 1.f / DRAW_TEXTURE_SCALE, WHITE);
+    DrawTextureEx(drawTexture.texture, Vector2(config.liveToolbarWidth, 0), 0.f, 1.f / DRAW_TEXTURE_SCALE, WHITE);
 
     if (!showSourceCode) textInput.draw();
 
     // Draw turtle (triangle).
-    Vector2 p1 = Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()), vm.pos);
-    Vector2 p2 = Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()), vm.pos);
-    Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()), vm.pos);
+    Vector2 p1 = Vector2Add(Vector2Rotate(Vector2{0.0f, -12.0f}, vm.rad()),
+                            Vector2Add(vm.pos, Vector2(config.liveToolbarWidth, 0)));
+    Vector2 p2 = Vector2Add(Vector2Rotate(Vector2{-6.0f, 8.0f}, vm.rad()),
+                            Vector2Add(vm.pos, Vector2(config.liveToolbarWidth, 0)));
+    Vector2 p3 = Vector2Add(Vector2Rotate(Vector2{6.0f, 8.0f}, vm.rad()),
+                            Vector2Add(vm.pos, Vector2(config.liveToolbarWidth, 0)));
     DrawTriangle(p1, p2, p3, GREEN);
   }
 
@@ -399,15 +410,15 @@ struct App {
     Vector2 end{};
 
     BeginTextureMode(drawTexture);
-    DrawRectangle(0, 0, GetScreenWidth() * DRAW_TEXTURE_SCALE, GetScreenHeight() * DRAW_TEXTURE_SCALE,
-                  colors[backgroundColorIndex]);
+    DrawRectangle(0, 0, config.VirtualWindowWidth() * DRAW_TEXTURE_SCALE,
+                  config.VirtualWindowHeight() * DRAW_TEXTURE_SCALE, vm.backgroundColor);
 
     for (auto const& line : vm.get_history()) {
       start.x = line.from.x * DRAW_TEXTURE_SCALE;
-      start.y = (GetScreenHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
+      start.y = (config.VirtualWindowHeight() - line.from.y) * DRAW_TEXTURE_SCALE;
 
       end.x = line.to.x * DRAW_TEXTURE_SCALE;
-      end.y = (GetScreenHeight() - line.to.y) * DRAW_TEXTURE_SCALE;
+      end.y = (config.VirtualWindowHeight() - line.to.y) * DRAW_TEXTURE_SCALE;
 
       DrawLineEx(start, end, line.thickness * DRAW_TEXTURE_SCALE, line.color);
     }

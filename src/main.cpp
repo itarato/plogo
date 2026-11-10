@@ -10,8 +10,8 @@ using namespace std;
 int main(int argc, char** args) {
   srand(static_cast<int>(time(nullptr)));
 
-  config.win_w = 1024;
-  config.win_h = 768;
+  config.win_w = 1200;
+  config.win_h = 800;
 
   App app;
   app.init();

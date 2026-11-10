@@ -24,15 +24,16 @@ struct TextInput {
 
   Font font;
 
-  TextInput() {}
+  TextInput() {
+  }
 
-  TextInput(TextInput const &other) = delete;
-  TextInput(TextInput &&other) = delete;
-  ~TextInput() {}
+  TextInput(TextInput const& other) = delete;
+  TextInput(TextInput&& other) = delete;
+  ~TextInput() {
+  }
 
   void init() {
-    font = LoadFontEx("resources/fonts/JetBrainsMono-Regular.ttf", TEXT_SIZE,
-                      nullptr, 255);
+    font = LoadFontEx("resources/fonts/JetBrainsMono-Regular.ttf", TEXT_SIZE, nullptr, 255);
   }
 
   optional<string> update() {
@@ -111,27 +112,22 @@ struct TextInput {
   }
 
   void draw() const {
-    DrawRectangle(0, GetScreenHeight() - TEXT_SIZE - TEXT_MARGIN * 2,
-                  GetScreenWidth(), GetScreenHeight(), LIGHTGRAY);
+    DrawRectangle(config.liveToolbarWidth, config.VirtualWindowHeight() - TEXT_SIZE - TEXT_MARGIN * 2,
+                  config.VirtualWindowWidth(), GetScreenHeight(), LIGHTGRAY);
 
     const int shevronPadding{18};
 
-    DrawTextEx(font, ">",
-               Vector2{(float)TEXT_MARGIN,
-                       (float)(GetScreenHeight() - TEXT_MARGIN - TEXT_SIZE)},
+    DrawTextEx(font, ">", Vector2{(float)TEXT_MARGIN, (float)(config.VirtualWindowHeight() - TEXT_MARGIN - TEXT_SIZE)},
                (float)TEXT_SIZE, 0.0f, BLACK);
 
-    DrawTextEx(font, command.c_str(),
-               Vector2{(float)(TEXT_MARGIN + shevronPadding),
-                       (float)(GetScreenHeight() - TEXT_MARGIN - TEXT_SIZE)},
-               (float)TEXT_SIZE, 0.0f, BLACK);
+    DrawTextEx(
+        font, command.c_str(),
+        Vector2{(float)(TEXT_MARGIN + shevronPadding), (float)(config.VirtualWindowHeight() - TEXT_MARGIN - TEXT_SIZE)},
+        (float)TEXT_SIZE, 0.0f, BLACK);
 
     string preCursor = command.substr(0, min((int)command.size(), cursor));
-    auto preCursorLen =
-        MeasureTextEx(font, preCursor.c_str(), (float)TEXT_SIZE, 0.0f);
-    DrawLine(preCursorLen.x + TEXT_MARGIN + shevronPadding,
-             GetScreenHeight() - TEXT_MARGIN - TEXT_SIZE,
-             preCursorLen.x + TEXT_MARGIN + shevronPadding,
-             GetScreenHeight() - TEXT_MARGIN, BLACK);
+    auto preCursorLen = MeasureTextEx(font, preCursor.c_str(), (float)TEXT_SIZE, 0.0f);
+    DrawLine(preCursorLen.x + TEXT_MARGIN + shevronPadding, config.VirtualWindowHeight() - TEXT_MARGIN - TEXT_SIZE,
+             preCursorLen.x + TEXT_MARGIN + shevronPadding, config.VirtualWindowHeight() - TEXT_MARGIN, BLACK);
   }
 };
