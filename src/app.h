@@ -342,8 +342,18 @@ struct App {
       }
 
       if (ImGui::Button("Clear and run")) needScriptReload = ScriptReload::Full;
+
       ImGui::SameLine();
+
       if (ImGui::Button("Run")) needScriptReload = ScriptReload::Light;
+
+      if (!vm.lastCompileError.empty()) {
+        ImGui::SameLine();
+
+        ImGui::PushTextWrapPos(config.liveToolbarWidth - 12);
+        ImGui::TextColored({1.0, 0.3, 0.3, 1.0}, "Compile error: %s", vm.lastCompileError.c_str());
+        ImGui::PopTextWrapPos();
+      }
     }
   }
 

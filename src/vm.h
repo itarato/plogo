@@ -57,6 +57,7 @@ struct VM {
   float thickness = 1.0;
   Color color = BLACK;
   Color backgroundColor = RAYWHITE;
+  std::string lastCompileError{};
 
   unordered_map<string, shared_ptr<Ast::ExecutableFnNode>> functions{};
 

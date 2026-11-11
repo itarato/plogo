@@ -5,18 +5,22 @@
 #include "parser.h"
 #include "vm.h"
 
-void runLogo(const char *code, VM *vm, float *renderTime) {
+void runLogo(const char* code, VM* vm, float* renderTime) {
   TraceLog(LOG_INFO, "Compile start");
   double t_start = GetTime();
 
   try {
+    vm->lastCompileError.clear();
+
     Lexer lexer{code};
     Parser parser{lexer.parse()};
     Ast::Program prg = parser.parse();
+
     prg.execute(vm);
-  } catch (runtime_error &e) {
+  } catch (runtime_error& e) {
     WARN("Compile error: %s", e.what());
     appLog.append(TextFormat("[ERROR] compile error: %s", e.what()));
+    vm->lastCompileError = e.what();
   }
 
   *renderTime = GetTime() - t_start;

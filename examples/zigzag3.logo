@@ -1,0 +1,20 @@
+bg(1)
+col(6)
+
+fn draw(len, lim, angle) {
+	if (len > lim) {
+		draw(len / 3, lim, 0 - angle)
+		l(angle)
+		draw(len / 3, lim, angle)
+		r(angle)
+		draw(len / 3, lim, 0 - angle)
+		r(angle)
+		draw(len / 3, lim, angle)
+		l(angle)
+		draw(len / 3, lim, 0 - angle)
+	} else {
+		f(len)
+	}
+}
+
+draw(1200, 4, 90)
