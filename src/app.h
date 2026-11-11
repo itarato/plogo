@@ -82,6 +82,17 @@ struct App {
 
     rlImGuiSetup(true);
 
+    ImGuiIO& io = ImGui::GetIO();
+    panelFont = io.Fonts->AddFontFromFileTTF("resources/fonts/JetBrainsMono-Regular.ttf", 20.0f);
+    if (panelFont == NULL) {
+      TraceLog(LOG_ERROR, "Cannot load font");
+      exit(EXIT_FAILURE);
+    }
+
+    rlImGuiReloadFonts();
+
+    ImGui::StyleColorsClassic();
+
     textInput.init();
 
     winWidth = config.VirtualWindowWidth();
@@ -161,7 +172,7 @@ struct App {
   float lastRenderTime{};
   char sourceCode[2048]{};
   bool showSourceCode{true};
-  float editorFontSize{1.0f};
+  ImFont* panelFont;
 
   void init_render_texture() {
     drawTexture = LoadRenderTexture(config.VirtualWindowWidth() * DRAW_TEXTURE_SCALE,
@@ -256,6 +267,7 @@ struct App {
 
   void drawPanel() {
     rlImGuiBegin();
+    ImGui::PushFont(panelFont);
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -271,6 +283,7 @@ struct App {
     drawToolbarLog();
     drawToolbarHelp();
 
+    ImGui::PopFont();
     ImGui::End();
     rlImGuiEnd();
   }
@@ -322,21 +335,11 @@ struct App {
     showSourceCode = ImGui::CollapsingHeader("Source code", ImGuiTreeNodeFlags_DefaultOpen);
 
     if (showSourceCode) {
-      if (ImGui::Button("Toggle font size")) {
-        if (editorFontSize < 1.5f) {
-          editorFontSize = 2.0f;
-        } else {
-          editorFontSize = 1.0f;
-        }
-      }
-
-      ImGui::SetWindowFontScale(editorFontSize);
       if (ImGui::InputTextMultiline("source_code", sourceCode, IM_ARRAYSIZE(sourceCode),
                                     ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 32),
                                     ImGuiInputTextFlags_AllowTabInput)) {
         needScriptReload = ScriptReload::Full;
       }
-      ImGui::SetWindowFontScale(1.0f);
 
       if (ImGui::Button("Clear and run")) needScriptReload = ScriptReload::Full;
       ImGui::SameLine();
