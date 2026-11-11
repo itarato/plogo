@@ -1,23 +1,29 @@
-intvar("size", 10, 1000, 200)
-intvar("angle", 0, 360, 30)
+intvar("size", 100, 2000, 400)
+intvar("angle", 0, 360, 20)
 intvar("th", 1, 100, 20)
 floatvar("dec", 1.1, 5.0, 1.4)
 intvar("lim", 1, 500, 4)
 
+bg(22)
+col(17)
+
 fn branch(size, angle, thick, dec, limit) {
+	s = size * (rand(5, 13) / 10)
+    a = angle + rand(-10, 10)
+
     t(thick)
-    f(size)
+    f(s)
 
     if (size > limit) {
-        l(angle)
+        l(a)
         branch(size / dec, angle, thick / dec, dec, limit)
-        r(angle * 2)
+        r(a * 2)
         branch(size / dec, angle, thick / dec, dec, limit)
-        l(angle)
+        l(a)
     }
 
     t(thick)
-    b(size)
+    b(s)
 }
 
 branch(size, angle, th, dec, lim)

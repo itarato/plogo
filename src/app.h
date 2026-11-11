@@ -229,7 +229,7 @@ struct App {
       UnloadRenderTexture(drawTexture);
       init_render_texture();
 
-      needScriptReload = ScriptReload::Light;
+      needScriptReload = ScriptReload::Light_and_state;
     }
 
     if (IsMouseButtonPressed(1)) {
