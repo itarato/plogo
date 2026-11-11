@@ -11,7 +11,7 @@ int main(int argc, char** args) {
   srand(static_cast<int>(time(nullptr)));
 
   config.win_w = 1200;
-  config.win_h = 800;
+  config.win_h = 1000;
 
   App app;
   app.init();
