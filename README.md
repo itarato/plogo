@@ -47,6 +47,8 @@ leaf(size, angle, iter, dec, limit)
 
 ## Examples
 
+![Triangles](./misc/triangles.png)
+
 ![Hilbert space filling curve](./misc/frac_hilbert.png)
 
 ![Tree fractal](./misc/frac_tree_vars.png)

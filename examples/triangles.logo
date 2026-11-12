@@ -1,0 +1,21 @@
+fn draw(len, lim, angle, mul) {
+	if (len > lim) {
+		draw(len * mul, lim, angle, mul)
+		r(angle)
+		draw(len * mul, lim, angle, mul)
+		l(angle)
+		draw(len * mul, lim, angle, mul)
+	} else {
+		f(len)
+	}
+}
+
+intvar("len", 100, 1000, 500)
+intvar("lim", 2, 200,  10)
+intvar("angle", 0, 180, 90)
+floatvar("mul", 0.1, 0.9, 0.5)
+
+bg(1)
+col(12)
+
+draw(len, lim, angle, mul)
